@@ -1,0 +1,10 @@
+{
+    "plugins": ["prettier"],
+    "extends": ["airbnb", "airbnb/hooks", "eslint:recommended", "plugin:prettier/recommended"],
+    "parserOptions": {
+        "project": "./tsconfig.json"
+    },
+    "rules": {
+        "prettier/prettier": "error"
+    }
+}
