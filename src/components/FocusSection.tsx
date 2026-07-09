@@ -24,7 +24,7 @@ const areas = [
 
 function FocusSection() {
     return (
-        <section className='`py-20 md:py-32 px-4 md:px-8 w-full overflow-hidden bg-slate-50'>
+        <section className='py-20 md:py-32 px-4 md:px-8 w-full overflow-hidden bg-slate-50'>
             <motion.div
                 initial={{
                 opacity: 0,

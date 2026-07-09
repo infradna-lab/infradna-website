@@ -14,7 +14,7 @@ function HeaderSection() {
             />
 
             <div className="relative z-10 container mx-auto px-4 flex flex-col items-center text-center">
-                <motion.div
+                <motion.h1
                     initial={{
                         opacity: 0,
                         scale: 0.95,
@@ -27,14 +27,14 @@ function HeaderSection() {
                         duration: 0.8,
                         ease: 'easeOut',
                     }}
-                    className="mb-12"
+                    className="mb-12 w-full max-w-2xl"
                 >
                     <img
                         src={logo}
-                        alt="로고"
-                        className="h-32 md:h-48 w-auto mx-auto drop-shadow-sm"
+                        alt="재단법인 인프라재난관리진흥원 (Infrastructure Disaster Navigation Agency)"
+                        className="w-full h-auto drop-shadow-sm"
                     />
-                </motion.div>
+                </motion.h1>
 
                 <motion.div
                     initial={{
@@ -51,13 +51,6 @@ function HeaderSection() {
                     }}
                     className="max-w-4xl mx-auto space-y-6"
                 >
-                    <h1 className="text-4xl md:text-6xl font-bold text-[#1e3a5f] tracking-tight leading-tight">
-                        재단법인 인프라재난관리진흥원
-                    </h1>
-                    <p className="text-xl md:text-2xl text-slate-600 font-light tracking-wide">
-                        Infrastructure Disaster Navigation Agency
-                    </p>
-
                     <div className="w-24 h-1 bg-[#0891b2] mx-auto my-8 rounded-full" />
 
                     <p className="text-lg md:text-xl text-slate-700 max-w-2xl mx-auto leading-relaxed break-keep">
