@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 프로젝트 기억 체계 (반드시 준수)
+
+이 저장소는 모든 결정·맥락을 **`docs/PROJECT_CONTEXT.md`** 한 문서에 축적한다.
+
+- **세션 시작**: `SessionStart` 훅(`.claude/settings.json` → `.claude/hooks/session-start.sh`)이 이 문서를 컨텍스트에 자동 주입한다. 작업을 시작하기 전 그 내용을 숙지한다. 지난 세션의 미정리 흔적(`.claude/session-ledger.local.md`, gitignore됨)이 함께 표시되면 정리 대상이다.
+- **세션 종료 / 중요한 결정 후**: `/session-log` 스킬을 실행해 문서를 보완한다(결정과 그 이유, 변경, 새 함정, TODO 갱신). 지속적 사실은 해당 섹션에 **중복 없이 병합**하고, 세션 로그에 날짜 항목을 추가한다.
+- **원칙**: 문서는 "무엇을 왜 그렇게 정했는가"를 남긴다. 매 세션 주입되므로 **간결·정확**하게 유지한다. 코드/깃 로그로 자명한 것은 적지 않는다.
+- `SessionEnd` 훅은 종료 시 타임스탬프 흔적만 로컬 원장에 자동 기록하는 **안전망**이다(지능적 요약은 `/session-log`가 담당).
+
 ## Commands
 
 ```bash
