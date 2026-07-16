@@ -38,7 +38,7 @@ function GuestbookList({ entries }: { entries: Entry[] }) {
             <span className="font-semibold text-[#1e3a5f] text-sm break-keep">{entry.nickname}</span>
             <span className="text-xs text-slate-400 shrink-0">{formatTime(entry.createdAt)}</span>
           </div>
-          <p className="text-slate-700 break-keep whitespace-pre-wrap leading-relaxed">
+          <p className="text-slate-700 break-keep break-words whitespace-pre-wrap leading-relaxed">
             {entry.message}
           </p>
         </motion.li>
