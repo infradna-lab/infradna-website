@@ -45,8 +45,13 @@
 
 ## 3. 구조
 
-기존 파일 중 수정하는 것은 **`src/App.tsx` 하나뿐**이며, 여기서도 import 1줄과
+기존 **앱 코드** 중 수정하는 것은 **`src/App.tsx` 하나뿐**이며, 여기서도 import 1줄과
 Route 1줄만 추가한다. `HomePage`, `FooterSection`, 네비게이션은 건드리지 않는다.
+
+(빌드 배관은 예외다: `tsconfig.app.json`이 `include: ["src"]`라서 `api/`가 타입체크에서
+빠지므로 `tsconfig.api.json`을 새로 만들고 `tsconfig.json`에 참조 1줄을 더한다.
+`package.json`에는 의존성과 `test` 스크립트가 붙는다. 롤백은 브랜치 revert이므로
+추가 비용은 없다 — 10절 참고.)
 
 ```
 api/guestbook.ts              (신규) Vercel Function — GET/POST
@@ -195,6 +200,15 @@ QR 진입이므로 **휴대폰 세로 화면이 기본**이다. 데스크톱은 
 - 애니메이션은 `'framer-motion'`에서 import (`motion/react` 아님)
 - Tailwind는 기본 유틸 + `slate-*` 중립 팔레트
 
+**방문객이 남긴 메시지에는 `break-keep`과 함께 `break-words`를 반드시 붙인다.**
+`break-keep`은 `word-break: keep-all`이라 **같은 문자(한글) 사이의 줄바꿈 기회를
+없앤다.** 공백 없는 한글 연속 입력(`ㅋㅋㅋ…` 같은)은 줄바꿈 지점이 하나도 없어서
+카드를 뚫고 나가고 페이지 전체에 가로 스크롤을 만든다. 100자면 휴대폰 카드(~358px)에
+~1600px가 들어가는 셈이다. **관리자 화면이 없으므로**(2절 비목표) 그런 글이 하나
+올라오면 학회 내내 공개 페이지가 깨진 채로 남고, 재배포 없이는 못 지운다.
+`overflow-wrap`과 `word-break`는 서로 독립이라 둘을 같이 쓰면 한글 단어 보존은
+유지하면서 넘칠 때만 끊어준다.
+
 폼에는 메시지 글자수 카운터(`0/100`)를 둔다.
 
 ---
@@ -244,12 +258,25 @@ npm 설치 시 `--legacy-peer-deps`가 필요하다 (기존 `@tokens-studio/sd-t
 
 ## 10. 롤백 절차 (학회 종료 후)
 
-1. `api/guestbook.ts` 삭제
-2. `src/guestbook/` 폴더 삭제
-3. `src/App.tsx`에서 import 1줄 + Route 1줄 제거
-4. Vercel 환경변수 `GUESTBOOK_WRITE_KEY`, `GUESTBOOK_EXPIRES_AT` 삭제
-5. Vercel Marketplace에서 Upstash 인테그레이션 제거
-6. 재배포
+**브랜치 revert로 되돌린다. 파일을 손으로 지우지 않는다.**
+
+```bash
+git revert -m 1 <머지커밋>   # feat/guestbook을 머지했을 경우
+git push
+```
+
+머지하지 않았다면 브랜치를 삭제하면 끝난다.
+
+그 다음 Vercel에서:
+
+1. 환경변수 `GUESTBOOK_WRITE_KEY`, `GUESTBOOK_EXPIRES_AT` 삭제
+2. Marketplace에서 Upstash 인테그레이션 제거
 
 데이터는 `GUESTBOOK_EXPIRES_AT` 시각에 자동 소멸하므로 **별도 삭제 작업이 없다.**
-5번을 먼저 수행해도 무방하다.
+
+**수동 삭제를 시도하지 말 것.** 이 기능은 `src/guestbook/`과 `api/guestbook.ts`만
+지운다고 사라지지 않는다 — `tsconfig.api.json`, `tsconfig.json`의 참조 1줄,
+`@upstash/redis`·`@vercel/node`·`vitest` 의존성, `package.json`의 `test` 스크립트가
+함께 딸려 있다. 특히 `api/`만 지우고 `tsconfig.json`의 참조를 남기면 **`npm run build`가
+깨진다**(include가 아무것도 매칭하지 못함). revert는 이 전부를 한 번에 정확히 되돌린다.
+애초에 작업 브랜치를 판 이유가 이것이다.

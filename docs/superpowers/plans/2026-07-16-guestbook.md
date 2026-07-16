@@ -21,6 +21,7 @@
 - **애니메이션 import는 `'framer-motion'`에서** — `motion/react` 아님.
 - **브랜드 색은 임의값 유틸리티**: 네이비 `text-[#1e3a5f]`, 시안 `bg-[#0891b2]`. `tailwind.config.js`는 로드되지 않으므로 커스텀 토큰·테마 클래스는 동작하지 않는다. 중립 팔레트는 `slate-*`.
 - **한국어 본문에는 `break-keep`** — 단어 중간 줄바꿈 방지.
+- **방문객이 남긴 메시지에는 `break-keep`과 함께 `break-words`** — `break-keep`은 `word-break: keep-all`이라 같은 문자(한글) 사이의 줄바꿈 기회를 없앤다. 공백 없는 한글 연속 입력(`ㅋㅋㅋ…`)은 끊을 지점이 없어 카드를 뚫고 페이지에 가로 스크롤을 만든다. 관리자 화면이 없어 재배포 전엔 못 지운다.
 - **컴포넌트는 `export default`** — 기존 파일 전부 이 방식.
 - **작업 브랜치는 `feat/guestbook`** — 학회 종료 후 브랜치 revert로 롤백한다.
 - **학회명 표기는 정확히 `IAHR-APD2026 · SWGIC2026`** (가운뎃점 `·` 사용).
@@ -685,7 +686,7 @@ function GuestbookList({ entries }: { entries: Entry[] }) {
             <span className="font-semibold text-[#1e3a5f] text-sm break-keep">{entry.nickname}</span>
             <span className="text-xs text-slate-400 shrink-0">{formatTime(entry.createdAt)}</span>
           </div>
-          <p className="text-slate-700 break-keep whitespace-pre-wrap leading-relaxed">
+          <p className="text-slate-700 break-keep break-words whitespace-pre-wrap leading-relaxed">
             {entry.message}
           </p>
         </motion.li>
