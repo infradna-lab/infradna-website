@@ -554,15 +554,28 @@ export function errorMessage(error: unknown): string {
   return ERROR_MESSAGES.NETWORK_ERROR
 }
 
-/** 응답 본문에서 에러 코드를 꺼낸다. 본문이 깨져 있으면 STORAGE_ERROR로 처리. */
+/**
+ * 본문을 파싱하되, 실패하면 raw SyntaxError 대신 GuestbookError를 던진다.
+ * 성공 응답(200)도 본문이 JSON이 아닐 수 있다 — vercel.json의 리라이트가
+ * /api를 삼키면 200 + HTML이 온다. 호출자가 다뤄야 할 에러 타입을 하나로 유지한다.
+ */
+async function parseJson<T>(res: Response): Promise<T> {
+  try {
+    return (await res.json()) as T
+  } catch {
+    throw new GuestbookError('STORAGE_ERROR')
+  }
+}
+
+/** 응답 본문에서 에러 코드를 꺼낸다. 본문이 깨졌거나 모르는 코드면 STORAGE_ERROR. */
 async function toError(res: Response): Promise<GuestbookError> {
   try {
-    const body = (await res.json()) as { error?: string }
+    const body = await parseJson<{ error?: string }>(res)
     if (body.error && body.error in ERROR_MESSAGES) {
       return new GuestbookError(body.error as ApiErrorCode)
     }
   } catch {
-    // 본문 파싱 실패 — 아래 기본값으로 떨어진다
+    // 파싱 실패 — 아래 기본값으로 떨어진다
   }
   return new GuestbookError('STORAGE_ERROR')
 }
@@ -576,7 +589,7 @@ export async function fetchEntries(): Promise<Entry[]> {
   }
   if (!res.ok) throw await toError(res)
 
-  const body = (await res.json()) as { entries: Entry[] }
+  const body = await parseJson<{ entries: Entry[] }>(res)
   return body.entries
 }
 
@@ -597,7 +610,7 @@ export async function postEntry(input: {
   }
   if (!res.ok) throw await toError(res)
 
-  const body = (await res.json()) as { entry: Entry }
+  const body = await parseJson<{ entry: Entry }>(res)
   return body.entry
 }
 ```
