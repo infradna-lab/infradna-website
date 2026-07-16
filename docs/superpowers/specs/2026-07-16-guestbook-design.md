@@ -79,6 +79,12 @@ Upstash Redis 리스트 키 하나를 쓴다.
   절대 시각으로 설정. 슬라이딩이 아닌 고정 만료이므로 마지막 글이 언제 올라오든
   예정된 시각에 전체가 소멸한다.
 
+**쓰기 3종은 `MULTI`로 묶는다.** `LPUSH`·`LTRIM`·`EXPIREAT`를 따로 호출하면 `LPUSH`만
+성공하고 `EXPIREAT`가 실패하는 창이 생기고, 그러면 **만료 시각 없는 글**이 남는다. 다음
+글이 정상 등록되면 같은 절대 시각으로 다시 걸려 자연 치유되지만, 그게 마지막 글이었다면
+영구히 잔존한다 — 이 설계의 핵심 근거인 "자동 소멸"이 깨진다. `multi()`는 명령을 한 요청으로
+직렬 실행하므로 부분 실패 창이 사라진다(`pipeline()`과 달리 원자적).
+
 ### 항목 스키마 (JSON 문자열로 저장)
 
 ```ts
@@ -113,7 +119,13 @@ IP, User-Agent, 세션 식별자는 **저장하지 않는다**.
 1. `key !== process.env.GUESTBOOK_WRITE_KEY` → `403 { error: "INVALID_KEY" }`
 2. `message`가 비었거나 100자 초과, `nickname`이 12자 초과 → `400 { error: "INVALID_INPUT" }`
 3. 개인정보 패턴 검출 (6절) → `400 { error: "PII_DETECTED" }`
-4. 통과 → `LPUSH` → `LTRIM` → `EXPIREAT` → `201 { entry: Entry }`
+4. `GUESTBOOK_EXPIRES_AT`이 파싱 불가 **또는 과거** → `500 { error: "CONFIG_ERROR" }`
+5. 통과 → `MULTI(LPUSH → LTRIM → EXPIREAT)` → `201 { entry: Entry }`
+
+**4번에서 "과거"까지 보는 이유**: 파싱만 검사하면 값이 과거일 때 `EXPIREAT`가 키를 즉시
+삭제하는데도 핸들러는 `201`을 반환한다. 방문객은 "남겼습니다"를 보고 떠나지만 목록은 비어
+있고, 서버 로그에도 아무 흔적이 없다. 환경변수 오타 한 번이면 부스 내내 이 상태일 수 있어,
+부스 현장에서 원인을 찾기 가장 어려운 종류의 실패다.
 
 서버는 기계가 읽는 코드만 반환하고, **한국어 문구는 클라이언트가 매핑**한다.
 서버 응답 문자열을 그대로 화면에 뿌리지 않는다.
@@ -208,15 +220,17 @@ QR 진입이므로 **휴대폰 세로 화면이 기본**이다. 데스크톱은 
 이 저장소에는 테스트 러너가 없다. 검증은 실제 실행으로 한다.
 
 **`vite dev`는 `api/` 폴더를 실행하지 않는다.** 로컬 전체 검증에는 `vercel dev`가
-필요하므로 **Vercel CLI를 설치한다** (`npm i -g vercel`).
+필요하다. **전역 설치(`npm i -g vercel`)는 하지 않고 `npx vercel@latest`를 쓴다** —
+`/usr/local/lib/node_modules` 권한 문제로 전역 설치가 실패하기도 하고, 어차피 롤백할
+기능이라 시스템에 CLI를 영구 설치할 이유가 없다.
 
 확인 항목:
 
 1. `npm run build` (tsc -b + vite build) 통과
-2. `vercel dev` — `k` 없이 접속 → 폼이 없고 목록만 보인다
-3. `vercel dev` — `?k=<올바른 키>` → 폼이 열리고 제출 시 목록에 반영된다
-4. `vercel dev` — 잘못된 키로 직접 POST → `403`
-5. `vercel dev` — 메시지에 전화번호/이메일 → `400 PII_DETECTED`, 저장 안 됨
+2. `npx vercel@latest dev` — `k` 없이 접속 → 폼이 없고 목록만 보인다
+3. `npx vercel@latest dev` — `?k=<올바른 키>` → 폼이 열리고 제출 시 목록에 반영된다
+4. `npx vercel@latest dev` — 잘못된 키로 직접 POST → `403`
+5. `npx vercel@latest dev` — 메시지에 전화번호/이메일 → `400 PII_DETECTED`, 저장 안 됨
 6. 프리뷰 배포 — **`vercel.json`의 `/(.*)` → `/index.html` 리라이트가
    `/api/guestbook`을 삼키지 않는지 확인.** Vercel은 리라이트보다 파일시스템·함수를
    먼저 매칭하므로 정상 동작이 유력하나, 배포 전에는 확정할 수 없다. 삼킨다면

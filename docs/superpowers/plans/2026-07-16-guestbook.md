@@ -293,14 +293,19 @@ npm i @upstash/redis --legacy-peer-deps
 npm i -D @vercel/node --legacy-peer-deps
 ```
 
-- [ ] **Step 2: Vercel CLI 설치 및 프로젝트 연결**
+- [ ] **Step 2: Vercel 프로젝트 연결**
+
+전역 설치는 하지 않는다 — `/usr/local/lib/node_modules` 권한 문제도 있고, 어차피 롤백할
+기능이라 시스템에 CLI를 영구 설치할 이유가 없다. `npx`로 충분하다.
 
 ```bash
-npm i -g vercel
-vercel link
+npx vercel@latest link
 ```
 
-Expected: `.vercel/` 폴더 생성, 기존 프로젝트에 연결됨.
+Expected: `.vercel/` 폴더 생성, 기존 프로젝트에 연결됨. `.env.local`과 `.vercel`이
+`.gitignore`에 자동 추가된다.
+
+이후 모든 Vercel 명령도 같은 방식이다 (`npx vercel@latest dev` 등).
 
 - [ ] **Step 3: Upstash Redis 연결**
 
@@ -312,9 +317,9 @@ Vercel 대시보드 → 프로젝트 → Storage → Marketplace에서 **Upstash
 `<키값>`은 QR에 심을 임의 문자열(예: `dna-booth-2026`), `<만료시각>`은 **학회 종료 + 7일**의 ISO 8601 값(예: `2026-09-30T23:59:59Z`).
 
 ```bash
-vercel env add GUESTBOOK_WRITE_KEY production preview development
-vercel env add GUESTBOOK_EXPIRES_AT production preview development
-vercel env pull .env.local
+npx vercel@latest env add GUESTBOOK_WRITE_KEY production preview development
+npx vercel@latest env add GUESTBOOK_EXPIRES_AT production preview development
+npx vercel@latest env pull .env.local
 ```
 
 Expected: `.env.local`에 4개 변수(Upstash 2개 + 위 2개)가 채워진다.
@@ -413,8 +418,10 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: result.error })
   }
 
+  // 파싱 가능한지 + 미래인지 둘 다 본다. 과거 값이면 EXPIREAT가 키를 즉시 지우는데도
+  // 201이 나가서, 방문객은 성공을 보고 목록은 빈 채로 남는다(무증상 실패).
   const expiresAtMs = Date.parse(process.env.GUESTBOOK_EXPIRES_AT ?? '')
-  if (Number.isNaN(expiresAtMs)) {
+  if (Number.isNaN(expiresAtMs) || expiresAtMs <= Date.now()) {
     return res.status(500).json({ error: 'CONFIG_ERROR' })
   }
 
@@ -426,10 +433,15 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await redis.lpush(KEY, entry)
-    await redis.ltrim(KEY, 0, MAX_ENTRIES - 1)
-    // 슬라이딩이 아닌 절대 만료. 마지막 글이 언제 올라오든 예정 시각에 전체 소멸.
-    await redis.expireat(KEY, Math.floor(expiresAtMs / 1000))
+    // multi()로 한 요청에 묶는다. 따로 호출하면 LPUSH만 성공하고 EXPIREAT가 실패하는
+    // 창이 생기고, 그러면 만료 없는 글이 영구히 남아 "자동 소멸" 근거가 깨진다.
+    // EXPIREAT는 슬라이딩이 아닌 절대 만료 — 마지막 글이 언제든 예정 시각에 전체 소멸.
+    await redis
+      .multi()
+      .lpush(KEY, entry)
+      .ltrim(KEY, 0, MAX_ENTRIES - 1)
+      .expireat(KEY, Math.floor(expiresAtMs / 1000))
+      .exec()
     return res.status(201).json({ entry })
   } catch {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
@@ -444,7 +456,7 @@ Expected: 성공. (`api/`가 이제 `tsconfig.api.json`으로 체크된다)
 
 - [ ] **Step 8: 로컬에서 엔드포인트 검증**
 
-터미널 1: `vercel dev`
+터미널 1: `npx vercel@latest dev`
 
 터미널 2에서 순서대로 실행하고 각 응답을 확인한다. `<키값>`은 Step 4에서 정한 값.
 
@@ -948,7 +960,7 @@ Expected: 성공
 
 - [ ] **Step 4: 로컬 전체 흐름 검증**
 
-Run: `vercel dev`
+Run: `npx vercel@latest dev`
 
 브라우저에서 각각 확인한다 (`<키값>`은 Task 2 Step 4의 값):
 
@@ -984,7 +996,7 @@ git commit -m "feat: 방명록 페이지와 /guestbook 라우트 연결"
 - [ ] **Step 1: 프리뷰 배포**
 
 ```bash
-vercel
+npx vercel@latest
 ```
 
 Expected: 프리뷰 URL 출력.
