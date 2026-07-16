@@ -45,7 +45,9 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
   }
 
   const expiresAtMs = Date.parse(process.env.GUESTBOOK_EXPIRES_AT ?? '')
-  if (Number.isNaN(expiresAtMs)) {
+  // 파싱 실패뿐 아니라 과거 시각도 거부한다. 과거 시각으로 EXPIREAT를 걸면
+  // Redis가 키를 즉시 삭제해 글은 201로 "저장됨" 응답을 받고도 목록에서 사라진다.
+  if (Number.isNaN(expiresAtMs) || expiresAtMs <= Date.now()) {
     return res.status(500).json({ error: 'CONFIG_ERROR' })
   }
 
@@ -57,10 +59,16 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await redis.lpush(KEY, entry)
-    await redis.ltrim(KEY, 0, MAX_ENTRIES - 1)
+    // multi()로 세 명령을 하나의 트랜잭션으로 묶는다. lpush만 성공하고
+    // ltrim/expireat가 네트워크 오류로 실패하면 TTL 없는 엔트리가 영구히
+    // 남는데, 트랜잭션은 전부 성공하거나 전부 실패하므로 그 상태를 막는다.
     // 슬라이딩이 아닌 절대 만료. 마지막 글이 언제 올라오든 예정 시각에 전체 소멸.
-    await redis.expireat(KEY, Math.floor(expiresAtMs / 1000))
+    await redis
+      .multi()
+      .lpush(KEY, entry)
+      .ltrim(KEY, 0, MAX_ENTRIES - 1)
+      .expireat(KEY, Math.floor(expiresAtMs / 1000))
+      .exec()
     return res.status(201).json({ entry })
   } catch {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
