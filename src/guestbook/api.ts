@@ -27,15 +27,24 @@ export function errorMessage(error: unknown): string {
   return ERROR_MESSAGES.NETWORK_ERROR
 }
 
+/** 응답 본문을 JSON으로 읽는다. 파싱에 실패하면(예: 2xx인데 HTML 본문 등) STORAGE_ERROR로 처리. */
+async function parseJson<T>(res: Response): Promise<T> {
+  try {
+    return (await res.json()) as T
+  } catch {
+    throw new GuestbookError('STORAGE_ERROR')
+  }
+}
+
 /** 응답 본문에서 에러 코드를 꺼낸다. 본문이 깨져 있으면 STORAGE_ERROR로 처리. */
 async function toError(res: Response): Promise<GuestbookError> {
   try {
-    const body = (await res.json()) as { error?: string }
+    const body = await parseJson<{ error?: string }>(res)
     if (body.error && body.error in ERROR_MESSAGES) {
       return new GuestbookError(body.error as ApiErrorCode)
     }
   } catch {
-    // 본문 파싱 실패 — 아래 기본값으로 떨어진다
+    // 본문 파싱 실패, 또는 알 수 없는 에러 코드 — 아래 기본값으로 떨어진다
   }
   return new GuestbookError('STORAGE_ERROR')
 }
@@ -49,7 +58,7 @@ export async function fetchEntries(): Promise<Entry[]> {
   }
   if (!res.ok) throw await toError(res)
 
-  const body = (await res.json()) as { entries: Entry[] }
+  const body = await parseJson<{ entries: Entry[] }>(res)
   return body.entries
 }
 
@@ -70,6 +79,6 @@ export async function postEntry(input: {
   }
   if (!res.ok) throw await toError(res)
 
-  const body = (await res.json()) as { entry: Entry }
+  const body = await parseJson<{ entry: Entry }>(res)
   return body.entry
 }
