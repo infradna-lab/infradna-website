@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Redis } from '@upstash/redis'
-import { validateEntry } from '../src/guestbook/validate'
-import type { Entry } from '../src/guestbook/types'
+import { validateEntry } from '../src/guestbook/validate.js'
+import type { Entry } from '../src/guestbook/types.js'
 
 /** 두 학회(IAHR-APD2026 · SWGIC2026)가 동시 개최이므로 통합 키 1개를 쓴다. */
 const KEY = 'guestbook:2026'
