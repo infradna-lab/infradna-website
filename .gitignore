@@ -25,3 +25,5 @@ dist-ssr
 
 # Claude 세션 로컬 원장 (자동 생성)
 .claude/session-ledger.local.md
+.vercel
+.env*
