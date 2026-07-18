@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
 
 function AboutSection() {
     return (
@@ -53,6 +55,44 @@ function AboutSection() {
                             체계적인 재난 관리 체계를 통해 지속 가능한 안전 사회를 만들어가는
                             것이 우리의 핵심 미션입니다.
                         </p>
+                    </div>
+                </div>
+
+                <div className="mt-12 md:mt-16 border-t border-slate-100 pt-10">
+                    <p className="text-slate-600 break-keep mb-6">
+                        말이 아니라, 우리가 해온 일로 보여드립니다.
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Link
+                            to="/research"
+                            className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors hover:border-[#0891b2] hover:bg-slate-50"
+                        >
+                            <span>
+                                <span className="block font-bold text-[#1e3a5f]">수행 과제 홍보</span>
+                                <span className="block text-sm text-slate-500 break-keep">
+                                    폭염·한파·홍수·가뭄 대응 연구 한눈에 보기
+                                </span>
+                            </span>
+                            <ArrowRight
+                                size={18}
+                                className="shrink-0 text-[#0891b2] transition-transform group-hover:translate-x-1"
+                            />
+                        </Link>
+                        <Link
+                            to="/achievements"
+                            className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors hover:border-[#0891b2] hover:bg-slate-50"
+                        >
+                            <span>
+                                <span className="block font-bold text-[#1e3a5f]">연구 성과</span>
+                                <span className="block text-sm text-slate-500 break-keep">
+                                    연구·교육·협력 활동의 기록
+                                </span>
+                            </span>
+                            <ArrowRight
+                                size={18}
+                                className="shrink-0 text-[#0891b2] transition-transform group-hover:translate-x-1"
+                            />
+                        </Link>
                     </div>
                 </div>
             </motion.div>
