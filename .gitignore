@@ -30,4 +30,7 @@ dist-ssr
 
 # 원본 자료(사이트 빌드에 불필요) · PowerPoint 임시 잠금파일
 docs/*.pptx
+docs/*.pdf
+docs/수생태/
+docs/도심홍수침수/
 ~$*.pptx

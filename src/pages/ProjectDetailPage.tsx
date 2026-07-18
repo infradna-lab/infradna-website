@@ -14,6 +14,7 @@ import {
   ImagePlus,
   Workflow,
   Images,
+  Award,
 } from 'lucide-react'
 import { projects, type MediaItem } from '../data/projects'
 import FooterSection from '../components/FooterSection'
@@ -54,12 +55,15 @@ function MediaFrame({
   hint = '이미지 준비 중',
   aspect = 'aspect-[16/9]',
   icon: Icon = ImagePlus,
+  natural = false,
 }: {
   media?: MediaItem
   label: string
   hint?: string
   aspect?: string
   icon?: React.ComponentType<{ size?: number; className?: string }>
+  /** true 면 고정 비율/크롭 없이 이미지 원본 비율 그대로 표시 */
+  natural?: boolean
 }) {
   const caption = media?.caption
   return (
@@ -68,7 +72,11 @@ function MediaFrame({
         <img
           src={media.src}
           alt={caption ?? label}
-          className={`w-full ${aspect} rounded-xl border border-slate-200 object-cover`}
+          className={
+            natural
+              ? 'w-full h-auto rounded-xl border border-slate-200'
+              : `w-full ${aspect} rounded-xl border border-slate-200 object-cover`
+          }
         />
       ) : (
         <div
@@ -159,6 +167,7 @@ function ProjectDetailPage() {
               label="대표 이미지"
               hint="연구를 대표하는 이미지를 추가하세요"
               aspect="aspect-[21/9]"
+              natural
             />
           </div>
 
@@ -207,6 +216,7 @@ function ProjectDetailPage() {
                     label="추진체계도"
                     hint="연구 추진 체계 다이어그램을 추가하세요"
                     icon={Workflow}
+                    natural
                   />
                 </div>
               </Block>
@@ -221,6 +231,19 @@ function ProjectDetailPage() {
                   ))}
                 </ul>
               </Block>
+
+              {project.outputs && project.outputs.length > 0 && (
+                <Block icon={Award} title="연구 성과물">
+                  <ul className="space-y-3">
+                    {project.outputs.map((out, i) => (
+                      <li key={i} className="flex gap-3 text-slate-700 break-keep leading-relaxed">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0891b2]" />
+                        <span>{out}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Block>
+              )}
 
               {/* 연구 성과 이미지 */}
               <Block icon={Images} title="연구 성과">
@@ -268,20 +291,6 @@ function ProjectDetailPage() {
                       <dd className="font-medium text-slate-800 break-keep">
                         {project.info.support}
                       </dd>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mb-2 flex items-center justify-between">
-                      <dt className="text-xs text-slate-500">진척도</dt>
-                      <dd className="text-sm font-semibold text-[#1e3a5f]">
-                        {project.info.progress}%
-                      </dd>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-                      <div
-                        className="h-full rounded-full bg-[#0891b2]"
-                        style={{ width: `${project.info.progress}%` }}
-                      />
                     </div>
                   </div>
                 </dl>
