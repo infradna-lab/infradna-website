@@ -37,22 +37,22 @@
 
 ### 연구 과제 데이터
 - `src/data/projects.ts`에 5개 과제 데이터 분리(`projects` 배열 + `getProject(id)`).
-- 필드: `id, title, period, category, summary, overview, objectives[], methods[], outcomes[], info{organization, support, progress}, media?{hero, diagram, gallery}`.
-- **상세 본문(summary/overview/objectives/methods/outcomes)과 info(주관기관·지원·진척도)는 placeholder** — 실제 과제 자료로 교체 필요.
+- 필드: `id, title, period, category, summary, overview, objectives[], methods[], outcomes[], outputs?[](연구 성과물), info{organization, support}, media?{hero, diagram(1개 또는 배열), gallery}`.
+- **5개 과제 모두 실제 자료로 교체 완료(2026-07-19)** — 각 과제 발표자료/PDF 기반 본문 + 이미지. 주관기관은 과제별 실제 기관(id1·4=인프라재난관리진흥원, id2=중부대 산학협력단, id3=중부대, id5=한국토지주택공사 LH). `progress`(진척도) 필드·바 제거(실측값 없음). 원본 자료(pptx/pdf/이미지 폴더)는 gitignore, 최적화 이미지만 `public/projects/`에 커밋.
 
 ### 상세 페이지 레이아웃 (결정: 모달/드로어가 아닌 "전용 상세 페이지")
 - 히어로(네이비) → 2단 본문(좌: 개요/목표/추진내용/기대효과, 우: sticky 과제정보 사이드바) → 이전/다음 과제 → 사이트 푸터 재사용.
-- **이미지/다이어그램 자리**: `MediaFrame` 컴포넌트가 `media.src` 있으면 이미지, 없으면 점선 placeholder 렌더.
-  - 대표 이미지(21:9, 히어로 아래) / 추진체계도(16:9, 추진 내용 안) / 연구 성과 갤러리(4:3 × 3).
-  - 실제 이미지는 `public/`에 넣고 `media` 필드에 `/파일명`으로 참조.
+- **이미지/다이어그램 자리**: `MediaFrame` 컴포넌트가 `media.src` 있으면 이미지, 없으면 점선 placeholder 렌더. `natural` prop이면 고정비율/크롭 없이 원본 비율 표시(대표 이미지·추진체계도에 적용).
+  - 대표 이미지(히어로 아래) / 추진체계도(추진 내용 안, **1개 또는 여러 장 배열 지원**) / 연구 성과 갤러리(4:3 × 3).
+  - `outputs`가 있으면 "연구 성과물" 블록(특허·저작권 등) 렌더. 실제 이미지는 `public/`에 넣고 `media`에 `/파일명`으로 참조.
 
-### 성과·홍보 페이지 (2026-07-18 도입)
-- 설계·계획: `docs/superpowers/specs/2026-07-18-showcase-and-promo-pages-design.md`, `docs/superpowers/plans/2026-07-18-showcase-and-promo-pages.md`. 브랜치 `feat/showcase-promo-pages`(origin에 push됨, **main 미머지 = 프로덕션 미반영**).
-- **성격 구분(핵심 결정)**: "성과"=회고·증거·신뢰(사진 아카이브), "홍보"=전망·내러티브·설득. 둘 다 PR 톤(주 독자: 미디어·일반 + 잠재 협력기관). 그래서 두 페이지가 히어로+협력 CTA를 공유.
-- **연구 성과 `/achievements`**: 보유 사진에 분류 메타데이터가 없어 필터형 대신 **심플 반응형 그리드 + 라이트박스**. 데이터 `src/data/gallery.ts`(현재 `galleryItems`/`achievementStats` **빈 배열**). 수동 그룹핑은 `group` 필드로 선택(순수 헬퍼 `groupGalleryItems`, 테스트 있음). 사진 없으면 빈 상태 렌더.
-- **수행 과제 홍보 `/research`**: 원본이 5장짜리 PPT(`docs/…부스홍보…0717.pptx`, 폭염·한파·홍수·가뭄). **슬라이드 이미지/PDF 임베드 대신 반응형 HTML로 재구성**(결정 근거: 16:9 슬라이드는 모바일에서 작은 숫자·수식이 뭉개짐 → 리플로우 필요). 데이터 `src/data/researchThemes.ts`(테마별 문제/해결/지표 카드/도표자리). 원본은 PDF 다운로드로 보존(`/research-deck.pdf`, **아직 없음**).
-- **공유 부품**: `PageHero`, `MetricCard`, `Lightbox`(제어형·키보드), `ImageGrid`. 기존 `FooterSection` 재사용. (초기엔 `CtaSection`도 있었으나 두 페이지 모두 푸터 문의처와 중복이라 제거함 — 2026-07-18.)
-- **미완(자산 대기)**: 성과 사진+앵커 지표 값, `research-deck.pdf`, 연구 도표(figures), **가뭄 슬라이드 텍스트**(이미지로 구워져 자동추출 불가 → 별도 확보). 코드는 전부 빈 상태/placeholder로 정상 렌더.
+### "우리의 연구"(/research) · 연구 성과(/achievements) — 2026-07-18 도입, 07-19 프로덕션 반영
+- 설계·계획: `docs/superpowers/specs/2026-07-18-showcase-and-promo-pages-design.md`, `.../plans/2026-07-18-showcase-and-promo-pages.md`. 서브에이전트 방식으로 구현 후 main 머지·배포 완료.
+- **수행 과제 홍보 `/research`("우리의 연구")**: 부스홍보 PPT를 반응형 HTML로 재구성(결정 근거: 16:9 슬라이드는 모바일에서 뭉개짐). 데이터 `src/data/researchThemes.ts`(폭염·한파·홍수·가뭄 테마별 문제/해결/지표/도표). **v4 최종본으로 갱신 완료**(가뭄 5개 분야 포함). 연구 도표(figures)는 pptx 원본 도표를 추출해 `public/research/`에 배치(폭염 2·홍수 2·가뭄 5, **한파는 덱에 도표가 없어 미표시**). 도표 렌더는 2열 자연비율, 빈 테마는 아무것도 안 보임. **PDF 다운로드 작동**: LibreOffice(`soffice --headless --convert-to pdf`)로 v4→PDF 변환해 `public/research-deck.pdf`(3.77MB).
+- **연구 성과 `/achievements`**: 심플 그리드+라이트박스(사진 아카이브). 데이터 `src/data/gallery.ts`(빈 배열, 순수 헬퍼 `groupGalleryItems`+테스트). **About에서 링크 제거 → 사이트 도달 경로 없음**(라우트·페이지는 남음, 완전 제거 여부 미정).
+- **About 진입**: `AboutSection` 하단에 "우리의 연구"(→/research) **단일 카드**(연구 성과 카드는 제거함).
+- **공유 부품**: `PageHero`, `MetricCard`, `Lightbox`(제어형·키보드), `ImageGrid`. 기존 `FooterSection` 재사용. `CtaSection`은 도입했다 푸터 문의처와 중복이라 제거함.
+- **PPT→이미지/PDF 워크플로**: pptx는 zip이라 `ppt/media/`에서 원본 도표 이미지 직접 추출 가능(슬라이드 캡처보다 깔끔). 슬라이드 렌더는 `pdftoppm`, 리사이즈는 `sips -Z`, pptx→pdf는 `soffice`(전부 설치돼 있음).
 
 ### 스타일링 (중요)
 - Tailwind v4 + `@tailwindcss/vite`. `src/index.css`는 `@import "tailwindcss";`가 전부.
@@ -87,16 +87,26 @@
 
 ## 5. 열린 항목 (TODO)
 
-- [ ] 연구 과제 5건의 상세 본문·사이드바 정보를 **실제 자료로 교체** (`src/data/projects.ts`)
+- [x] ~~연구 과제 5건 실제 자료로 교체~~ (2026-07-19 완료)
+- [ ] **id:2 특허 등록번호 불일치**: 등록증 이미지엔 `제10-2719714호`, 캡션엔 `제10-2470038호` — 어느 게 맞는지 확인 후 통일 필요(현재 캡션대로 배포됨).
 - [ ] `og:image`용 공유 이미지(`public/og-image.png`) 추가 및 메타 연결
 - [ ] 라이브 도메인 재배포 확인 + Google Search Console 색인 요청(검색 결과 갱신용)
 - [ ] (선택) 3대 서비스(리스크 분석/정책 지원/인력 교육)를 About에서 아이콘 리스트로 시각화할지 결정
 - [ ] **학회 종료 후 방명록 롤백**: 최신부터 순서로 `git revert 8d38d43 && git revert -m 1 dd44a9f` → push. 이어 Vercel 환경변수 `GUESTBOOK_*` 삭제 + Marketplace Upstash 제거. 데이터는 `2026-07-28 23:59 KST` 자동 소멸.
 - [ ] 실기기에서 QR(`/guestbook?k=<키>`) 스캔 → 제출까지 완주 테스트(현장 확인)
-- [ ] **성과·홍보 페이지 자산 투입**: 성과 사진(`public/gallery/*.webp`)+`achievementStats` 값, `public/research-deck.pdf`, 연구 도표(figures), **가뭄 슬라이드 텍스트** → 채운 뒤 `main` 머지·push로 배포.
+- [ ] **연구 성과 페이지(/achievements) 정리**: About 링크 제거로 도달 경로 없음 → 라우트·페이지·`gallery.ts`·`ImageGrid` 완전 삭제할지 결정(현재는 남겨둠). 살릴 경우 성과 사진(`public/gallery/*.webp`)+`achievementStats` 투입 필요.
+- [ ] **가뭄 연구 도표 화질**: `/research` 가뭄 도표 원본이 640px로 다른 테마보다 저해상도 → 더 큰 원본 있으면 교체.
 - [ ] (기존 이슈) `eslint.config.js` ESLint 8/9 불일치 정리(4절 참고) — 선택.
 
 ## 6. 세션 로그 (최신이 위로, `/session-log`로 갱신)
+
+### 2026-07-19 — 성과·홍보 페이지 프로덕션 반영 + 5개 연구 과제 실제 콘텐츠·이미지 전면 채움
+- `feat/showcase-promo-pages`를 main 머지·push로 **프로덕션 배포**(라이브 반영을 번들 해시로 검증하는 루틴 사용: 로컬 `dist/index.html`의 `index-*.js`와 `curl https://www.infradna.or.kr/` 비교, ~45초).
+- **5개 주요 연구 과제(`projects.ts`) 실제 자료로 교체**: 각 과제 발표자료/PDF(사용자가 `docs/<과제폴더>/`에 투입)를 읽고 본문·이미지 매핑. 이미지는 `pdftoppm`/`sips`/pptx media 추출로 최적화해 `public/projects/`에 배치, 원본은 gitignore. 상세 페이지에 **`natural`(원본 비율)·`diagram` 배열(추진내용 다중 이미지)·`outputs`(연구 성과물 블록)** 추가, **진척도 바 제거**.
+- **"우리의 연구"(/research) v4 최종본 반영**: 업데이트된 부스홍보 v4 pptx로 4테마 전면 갱신(**가뭄 5개 분야 완성**). 각 테마 **연구 도표**를 pptx `ppt/media/`에서 원본 추출해 삽입(폭염2·홍수2·가뭄5, 한파는 도표 없어 미표시). **PDF 다운로드 실제 구현**(`soffice`로 v4→PDF, `public/research-deck.pdf`).
+- **About 재디자인**: "연구 성과" 링크 카드 제거, "우리의 연구" 단일 카드로. `/achievements`는 도달 경로 없어짐(정리 여부 열린 항목).
+- **작업 방식 메모**: 사용자가 자료를 폴더에 넣고 지시 → 확인·매핑·최적화·빌드·브라우저 검증·배포 반복. 판단 항목(카테고리·기간·저해상도·특허번호 불일치 등)은 그때그때 사용자에게 확인.
+- **로컬 알림 훅**: 사용자 요청으로 `~/.claude/settings.json`에 Stop 훅(`afplay .../Glass.aiff`, async) 추가 — 매 턴 종료 시 소리 알림(프로젝트가 아니라 개인 CLI 설정).
 
 ### 2026-07-18 — 성과·홍보 페이지 설계→구현(서브에이전트 방식) + 브랜치 push
 - 브레인스토밍으로 두 페이지의 성격을 분리(성과=증거/신뢰, 홍보=내러티브/설득) 후 스펙·계획 문서 작성(main 로컬 커밋 `1b927d9`, `2238f95`, 미push). PPT 검토로 원본이 5장·규칙구조임을 확인 → **이미지/PDF 임베드가 아니라 반응형 HTML 재구성**으로 방향 확정(모바일 가독성 근거).
