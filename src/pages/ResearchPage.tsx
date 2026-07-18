@@ -82,29 +82,19 @@ function ResearchPage() {
                 </div>
               )}
 
-              {/* 연구 도표 자리 */}
-              {theme.figures.length > 0 ? (
-                <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              {/* 연구 도표 (있는 테마만 표시) */}
+              {theme.figures.length > 0 && (
+                <div className="mt-8 grid items-start gap-4 sm:grid-cols-2">
                   {theme.figures.map((fig, fi) => (
                     <button
                       key={fig.src}
                       type="button"
                       onClick={() => setLightbox({ images: theme.figures, index: fi })}
-                      className="overflow-hidden rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
+                      className="overflow-hidden rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0891b2]"
                     >
-                      <img
-                        src={fig.src}
-                        alt={fig.alt}
-                        loading="lazy"
-                        className="aspect-[4/3] w-full object-cover"
-                      />
+                      <img src={fig.src} alt={fig.alt} loading="lazy" className="h-auto w-full" />
                     </button>
                   ))}
-                </div>
-              ) : (
-                <div className="mt-8 flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400">
-                  <ImagePlus size={26} />
-                  <span className="text-sm text-slate-500">연구 도표 준비 중</span>
                 </div>
               )}
             </motion.div>
@@ -118,7 +108,7 @@ function ResearchPage() {
           <p className="mb-4 text-slate-600 break-keep">연구 자료 원본을 내려받을 수 있습니다.</p>
           <a
             href="/research-deck.pdf"
-            download
+            download="인프라재난관리진흥원_기후재난대응연구.pdf"
             className="inline-flex items-center gap-2 rounded-full bg-[#1e3a5f] px-6 py-3 font-medium text-white transition-colors hover:bg-[#0891b2]"
           >
             <Download size={18} />PDF 다운로드

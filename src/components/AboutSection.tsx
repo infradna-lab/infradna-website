@@ -59,38 +59,25 @@ function AboutSection() {
                 </div>
 
                 <div className="mt-12 md:mt-16 border-t border-slate-100 pt-10">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <Link
-                            to="/research"
-                            className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors hover:border-[#0891b2] hover:bg-slate-50"
-                        >
-                            <span>
-                                <span className="block font-bold text-[#1e3a5f]">우리의 연구</span>
-                                <span className="block text-sm text-slate-500 break-keep">
-                                    폭염·한파·홍수·가뭄 대응 연구 한눈에 보기
-                                </span>
+                    <Link
+                        to="/research"
+                        className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm transition-colors hover:border-[#0891b2] hover:bg-slate-50"
+                    >
+                        <span>
+                            <span className="block text-lg md:text-xl font-bold text-[#1e3a5f]">
+                                우리의 연구
                             </span>
-                            <ArrowRight
-                                size={18}
-                                className="shrink-0 text-[#0891b2] transition-transform group-hover:translate-x-1"
-                            />
-                        </Link>
-                        <Link
-                            to="/achievements"
-                            className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors hover:border-[#0891b2] hover:bg-slate-50"
-                        >
-                            <span>
-                                <span className="block font-bold text-[#1e3a5f]">연구 성과</span>
-                                <span className="block text-sm text-slate-500 break-keep">
-                                    연구·교육·협력 활동의 기록
-                                </span>
+                            <span className="mt-1 block text-sm md:text-base text-slate-500 break-keep">
+                                폭염·한파·홍수·가뭄 등 우리가 수행하는 연구 과제를 한눈에 확인해 보세요
                             </span>
+                        </span>
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0891b2]/10 text-[#0891b2] transition-colors group-hover:bg-[#0891b2] group-hover:text-white">
                             <ArrowRight
-                                size={18}
-                                className="shrink-0 text-[#0891b2] transition-transform group-hover:translate-x-1"
+                                size={20}
+                                className="transition-transform group-hover:translate-x-0.5"
                             />
-                        </Link>
-                    </div>
+                        </span>
+                    </Link>
                 </div>
             </motion.div>
         </section>
