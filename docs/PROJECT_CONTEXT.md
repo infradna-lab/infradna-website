@@ -32,7 +32,8 @@
 - 라우트: `/` → `HomePage`, `/projects/:id` → `ProjectDetailPage`, `/achievements` → `AchievementsPage`, `/research` → `ResearchPage` (그리고 기간한정 `/guestbook`).
 - `ScrollManager`(App에 1회 렌더): 이동 시 해시가 있으면 해당 요소로, 없으면 최상단으로 스크롤.
 - `HomePage` 섹션 순서: `HeaderSection → AboutSection → FocusSection → ProjectSection → FooterSection`.
-- `ProjectSection`에 `id="projects"`(뒤로가기 앵커), 카드는 `/projects/:id`로 `<Link>`. 카드 그리드 하단에 `/research`·`/achievements` **진입 링크 2개**(홈에서 두 페이지로 가는 통로). ※ 이 배치 위치는 재검토 중(주요 연구 과제 vs 주요 연구 분야) — 6절 세션 로그 참고.
+- `ProjectSection`에 `id="projects"`(뒤로가기 앵커), 카드는 `/projects/:id`로 `<Link>`.
+- **성과·홍보 진입 링크**(`/research`·`/achievements`)는 `AboutSection`(우리가 하는 일) 하단에 배치(밝은 배경용 카드). "우리가 하는 일(약속) → 실제로 해온 일(증거)" 흐름 + 상단 노출로 가시성 확보가 근거. (ProjectSection 하단에 잠깐 뒀다가 이전함.)
 
 ### 연구 과제 데이터
 - `src/data/projects.ts`에 5개 과제 데이터 분리(`projects` 배열 + `getProject(id)`).
@@ -93,7 +94,6 @@
 - [ ] **학회 종료 후 방명록 롤백**: 최신부터 순서로 `git revert 8d38d43 && git revert -m 1 dd44a9f` → push. 이어 Vercel 환경변수 `GUESTBOOK_*` 삭제 + Marketplace Upstash 제거. 데이터는 `2026-07-28 23:59 KST` 자동 소멸.
 - [ ] 실기기에서 QR(`/guestbook?k=<키>`) 스캔 → 제출까지 완주 테스트(현장 확인)
 - [ ] **성과·홍보 페이지 자산 투입**: 성과 사진(`public/gallery/*.webp`)+`achievementStats` 값, `public/research-deck.pdf`, 연구 도표(figures), **가뭄 슬라이드 텍스트** → 채운 뒤 `main` 머지·push로 배포.
-- [ ] **성과·홍보 진입 링크 배치 재검토**: 현재 `ProjectSection`(주요 연구 과제) 하단. 사용자 제안 = `FocusSection`(주요 연구 분야)로 이동 검토 중. (내 의견은 세션 로그 참고)
 - [ ] (기존 이슈) `eslint.config.js` ESLint 8/9 불일치 정리(4절 참고) — 선택.
 
 ## 6. 세션 로그 (최신이 위로, `/session-log`로 갱신)
@@ -103,7 +103,7 @@
 - **서브에이전트 구동 개발**로 7개 태스크 실행(각 태스크: 구현 서브에이전트 → 리뷰 서브에이전트 → 수정 루프). 브랜치 `feat/showcase-promo-pages`(base `2238f95`), 9커밋. 31/31 테스트 통과, `npm run build` green, 브라우저로 육안 검증.
 - **발견·수정**: (1) Task1 서브에이전트가 깨진 lint를 억지로 통과시키려 `eslint.config.js`·무관 파일을 수정 → 되돌리고 **검증을 build로 고정**(4절에 기록). (2) 성과 페이지 라이트박스 인덱스가 그룹정렬 순서와 어긋나던 버그 수정(`1f5f0e4`). (3) Lightbox 빈 배열 keydown 가드 추가(`6b2dba5`).
 - **배치 결정**: 리뷰·검증 후 `origin`에 **브랜치만 push**(프로덕션 미반영). 라이브는 자산 채운 뒤 main 머지로.
-- **진입 링크 배치 논의(미결)**: 사용자가 "수행 과제 홍보·연구 성과 링크를 `주요 연구 과제`(ProjectSection)보다 `주요 연구 분야`(FocusSection)에 넣는 게 어떤가" 제안. **내 의견**: 반대 성향. `주요 연구 분야`는 역량(분야) 카드 영역인데 특히 "수행 과제 홍보"는 *과제* 링크라 라벨↔내용이 어긋남. "수행 과제 홍보"는 오히려 `주요 연구 과제`와 동일 도메인. 가시성이 목적이면 섹션 이동보다 **사이트 레벨 내비/바로가기 밴드**로 격상하는 편이 낫다고 봄 → 사용자 결정 대기.
+- **진입 링크 배치(결정)**: 후보 3안(주요 연구 과제 유지 / 주요 연구 분야 이동 / About 이전)을 논의. `주요 연구 분야`(FocusSection)는 역량 카드 영역이라 "수행 과제 홍보"(과제) 링크와 라벨↔내용 미스매치 → 배제. **최종: `AboutSection`(우리가 하는 일) 하단으로 이전**(커밋 `76f8efc`). 근거: About 본문이 이미 폭염·침수·수자원 등 홍보 페이지 주제를 말로 약속 → 그 아래 링크가 "실제로 해온 일(증거)"로 자연스럽게 이어짐 + About이 2번째 섹션이라 가시성도 확보. ProjectSection 하단 링크는 제거(중복 방지).
 
 ### 2026-07-17 — 방명록 main 머지 + 배포 검증(ESM 버그 발견·수정)
 - `feat/guestbook`(방명록 20여 커밋)을 **`--no-ff`로 main 머지**(커밋 `dd44a9f`) — fast-forward 시 머지 커밋이 안 생겨 설계 10절의 `revert -m 1` 롤백이 불가하므로 의도적으로 no-ff. push로 프로덕션 배포.
