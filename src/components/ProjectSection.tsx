@@ -81,6 +81,29 @@ function ProjectSection() {
                         </motion.div>
                     ))}
                 </div>
+
+                <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                    <Link
+                        to="/research"
+                        className="group flex items-center justify-between rounded-xl border border-white/15 bg-white/5 px-6 py-5 transition-colors hover:bg-white/10"
+                    >
+                        <span>
+                            <span className="block font-bold text-white">수행 과제 홍보</span>
+                            <span className="block text-sm text-blue-200">폭염·한파·홍수·가뭄 대응 연구 한눈에 보기</span>
+                        </span>
+                        <ArrowRight size={18} className="text-blue-200 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                    <Link
+                        to="/achievements"
+                        className="group flex items-center justify-between rounded-xl border border-white/15 bg-white/5 px-6 py-5 transition-colors hover:bg-white/10"
+                    >
+                        <span>
+                            <span className="block font-bold text-white">연구 성과</span>
+                            <span className="block text-sm text-blue-200">연구·교육·협력 활동의 기록</span>
+                        </span>
+                        <ArrowRight size={18} className="text-blue-200 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                </div>
             </motion.div>
         </section>
     )
