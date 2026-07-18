@@ -25,6 +25,10 @@ function AchievementsPage() {
     return { ...g, base }
   })
 
+  // 라이트박스 인덱스가 그룹 정렬 순서를 기준으로 계산되므로,
+  // Lightbox에 넘기는 이미지 배열도 동일한 순서로 맞춘다.
+  const orderedItems = groupsWithOffset.flatMap((g) => g.items)
+
   return (
     <div className="min-h-screen bg-white">
       <PageHero
@@ -68,7 +72,7 @@ function AchievementsPage() {
 
       {lightboxIndex !== null && (
         <Lightbox
-          images={galleryItems}
+          images={orderedItems}
           index={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onIndexChange={setLightboxIndex}
