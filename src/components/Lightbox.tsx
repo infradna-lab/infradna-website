@@ -21,6 +21,7 @@ function Lightbox({ images, index, onClose, onIndexChange }: LightboxProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
+      if (count === 0) return
       if (e.key === 'ArrowLeft') onIndexChange((index - 1 + count) % count)
       if (e.key === 'ArrowRight') onIndexChange((index + 1) % count)
     }
