@@ -27,3 +27,7 @@ dist-ssr
 .claude/session-ledger.local.md
 .vercel
 .env*
+
+# 원본 자료(사이트 빌드에 불필요) · PowerPoint 임시 잠금파일
+docs/*.pptx
+~$*.pptx

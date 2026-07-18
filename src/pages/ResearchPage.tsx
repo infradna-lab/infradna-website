@@ -115,13 +115,13 @@ function ResearchPage() {
       {/* 원본 자료 다운로드 */}
       <section className="px-4 md:px-8 pb-16 md:pb-24">
         <div className="max-w-5xl mx-auto rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
-          <p className="mb-4 text-slate-600 break-keep">발표 자료 원본을 내려받을 수 있습니다.</p>
+          <p className="mb-4 text-slate-600 break-keep">연구 자료 원본을 내려받을 수 있습니다.</p>
           <a
             href="/research-deck.pdf"
             download
             className="inline-flex items-center gap-2 rounded-full bg-[#1e3a5f] px-6 py-3 font-medium text-white transition-colors hover:bg-[#0891b2]"
           >
-            <Download size={18} /> 발표자료 PDF 다운로드
+            <Download size={18} />PDF 다운로드
           </a>
         </div>
       </section>
