@@ -59,16 +59,13 @@ function AboutSection() {
                 </div>
 
                 <div className="mt-12 md:mt-16 border-t border-slate-100 pt-10">
-                    <p className="text-slate-600 break-keep mb-6">
-                        말이 아니라, 우리가 해온 일로 보여드립니다.
-                    </p>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <Link
                             to="/research"
                             className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors hover:border-[#0891b2] hover:bg-slate-50"
                         >
                             <span>
-                                <span className="block font-bold text-[#1e3a5f]">수행 과제 홍보</span>
+                                <span className="block font-bold text-[#1e3a5f]">우리의 연구</span>
                                 <span className="block text-sm text-slate-500 break-keep">
                                     폭염·한파·홍수·가뭄 대응 연구 한눈에 보기
                                 </span>
