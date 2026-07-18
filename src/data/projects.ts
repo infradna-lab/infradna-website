@@ -142,7 +142,7 @@ export const projects: Project[] = [
         {
           src: '/projects/drought-patent-reg.png',
           caption:
-            '가뭄 피해 기사에 대한 텍스트 마이닝과 실측 자료에 기반한 가뭄 영향 산정 시스템 및 방법 (등록번호: 제10-2470038호)',
+            '가뭄 피해 기사에 대한 텍스트 마이닝과 실측 자료에 기반한 가뭄 영향 산정 시스템 및 방법 (등록번호: 제10-2719714호)',
         },
         {
           src: '/projects/drought-patent-app.png',
