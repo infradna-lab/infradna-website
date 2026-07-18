@@ -4,7 +4,6 @@ import { Thermometer, Snowflake, Waves, Droplets, Download, ImagePlus } from 'lu
 import type { LucideIcon } from 'lucide-react'
 import PageHero from '../components/PageHero'
 import MetricCard from '../components/MetricCard'
-import CtaSection from '../components/CtaSection'
 import Lightbox, { type LightboxImage } from '../components/Lightbox'
 import FooterSection from '../components/FooterSection'
 import { researchThemes, researchIntro } from '../data/researchThemes'
@@ -127,7 +126,6 @@ function ResearchPage() {
         </div>
       </section>
 
-      <CtaSection title="이 연구, 함께 확장하고 싶다면" />
       <FooterSection />
 
       {lightbox && (

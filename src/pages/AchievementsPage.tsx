@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ImageOff } from 'lucide-react'
 import PageHero from '../components/PageHero'
-import CtaSection from '../components/CtaSection'
 import ImageGrid from '../components/ImageGrid'
 import Lightbox from '../components/Lightbox'
 import FooterSection from '../components/FooterSection'
@@ -67,7 +66,6 @@ function AchievementsPage() {
         </div>
       </section>
 
-      <CtaSection />
       <FooterSection />
 
       {lightboxIndex !== null && (

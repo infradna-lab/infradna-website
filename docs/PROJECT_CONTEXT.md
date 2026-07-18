@@ -51,7 +51,7 @@
 - **성격 구분(핵심 결정)**: "성과"=회고·증거·신뢰(사진 아카이브), "홍보"=전망·내러티브·설득. 둘 다 PR 톤(주 독자: 미디어·일반 + 잠재 협력기관). 그래서 두 페이지가 히어로+협력 CTA를 공유.
 - **연구 성과 `/achievements`**: 보유 사진에 분류 메타데이터가 없어 필터형 대신 **심플 반응형 그리드 + 라이트박스**. 데이터 `src/data/gallery.ts`(현재 `galleryItems`/`achievementStats` **빈 배열**). 수동 그룹핑은 `group` 필드로 선택(순수 헬퍼 `groupGalleryItems`, 테스트 있음). 사진 없으면 빈 상태 렌더.
 - **수행 과제 홍보 `/research`**: 원본이 5장짜리 PPT(`docs/…부스홍보…0717.pptx`, 폭염·한파·홍수·가뭄). **슬라이드 이미지/PDF 임베드 대신 반응형 HTML로 재구성**(결정 근거: 16:9 슬라이드는 모바일에서 작은 숫자·수식이 뭉개짐 → 리플로우 필요). 데이터 `src/data/researchThemes.ts`(테마별 문제/해결/지표 카드/도표자리). 원본은 PDF 다운로드로 보존(`/research-deck.pdf`, **아직 없음**).
-- **공유 부품**: `PageHero`, `MetricCard`, `CtaSection`, `Lightbox`(제어형·키보드), `ImageGrid`. 기존 `FooterSection` 재사용.
+- **공유 부품**: `PageHero`, `MetricCard`, `Lightbox`(제어형·키보드), `ImageGrid`. 기존 `FooterSection` 재사용. (초기엔 `CtaSection`도 있었으나 두 페이지 모두 푸터 문의처와 중복이라 제거함 — 2026-07-18.)
 - **미완(자산 대기)**: 성과 사진+앵커 지표 값, `research-deck.pdf`, 연구 도표(figures), **가뭄 슬라이드 텍스트**(이미지로 구워져 자동추출 불가 → 별도 확보). 코드는 전부 빈 상태/placeholder로 정상 렌더.
 
 ### 스타일링 (중요)
