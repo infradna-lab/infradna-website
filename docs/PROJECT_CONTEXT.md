@@ -29,10 +29,10 @@
 
 ### 라우팅
 - `main.tsx`가 `<App/>`을 `<BrowserRouter>`로 감쌈.
-- 라우트: `/` → `HomePage`, `/projects/:id` → `ProjectDetailPage`.
+- 라우트: `/` → `HomePage`, `/projects/:id` → `ProjectDetailPage`, `/achievements` → `AchievementsPage`, `/research` → `ResearchPage` (그리고 기간한정 `/guestbook`).
 - `ScrollManager`(App에 1회 렌더): 이동 시 해시가 있으면 해당 요소로, 없으면 최상단으로 스크롤.
 - `HomePage` 섹션 순서: `HeaderSection → AboutSection → FocusSection → ProjectSection → FooterSection`.
-- `ProjectSection`에 `id="projects"`(뒤로가기 앵커), 카드는 `/projects/:id`로 `<Link>`.
+- `ProjectSection`에 `id="projects"`(뒤로가기 앵커), 카드는 `/projects/:id`로 `<Link>`. 카드 그리드 하단에 `/research`·`/achievements` **진입 링크 2개**(홈에서 두 페이지로 가는 통로). ※ 이 배치 위치는 재검토 중(주요 연구 과제 vs 주요 연구 분야) — 6절 세션 로그 참고.
 
 ### 연구 과제 데이터
 - `src/data/projects.ts`에 5개 과제 데이터 분리(`projects` 배열 + `getProject(id)`).
@@ -44,6 +44,14 @@
 - **이미지/다이어그램 자리**: `MediaFrame` 컴포넌트가 `media.src` 있으면 이미지, 없으면 점선 placeholder 렌더.
   - 대표 이미지(21:9, 히어로 아래) / 추진체계도(16:9, 추진 내용 안) / 연구 성과 갤러리(4:3 × 3).
   - 실제 이미지는 `public/`에 넣고 `media` 필드에 `/파일명`으로 참조.
+
+### 성과·홍보 페이지 (2026-07-18 도입)
+- 설계·계획: `docs/superpowers/specs/2026-07-18-showcase-and-promo-pages-design.md`, `docs/superpowers/plans/2026-07-18-showcase-and-promo-pages.md`. 브랜치 `feat/showcase-promo-pages`(origin에 push됨, **main 미머지 = 프로덕션 미반영**).
+- **성격 구분(핵심 결정)**: "성과"=회고·증거·신뢰(사진 아카이브), "홍보"=전망·내러티브·설득. 둘 다 PR 톤(주 독자: 미디어·일반 + 잠재 협력기관). 그래서 두 페이지가 히어로+협력 CTA를 공유.
+- **연구 성과 `/achievements`**: 보유 사진에 분류 메타데이터가 없어 필터형 대신 **심플 반응형 그리드 + 라이트박스**. 데이터 `src/data/gallery.ts`(현재 `galleryItems`/`achievementStats` **빈 배열**). 수동 그룹핑은 `group` 필드로 선택(순수 헬퍼 `groupGalleryItems`, 테스트 있음). 사진 없으면 빈 상태 렌더.
+- **수행 과제 홍보 `/research`**: 원본이 5장짜리 PPT(`docs/…부스홍보…0717.pptx`, 폭염·한파·홍수·가뭄). **슬라이드 이미지/PDF 임베드 대신 반응형 HTML로 재구성**(결정 근거: 16:9 슬라이드는 모바일에서 작은 숫자·수식이 뭉개짐 → 리플로우 필요). 데이터 `src/data/researchThemes.ts`(테마별 문제/해결/지표 카드/도표자리). 원본은 PDF 다운로드로 보존(`/research-deck.pdf`, **아직 없음**).
+- **공유 부품**: `PageHero`, `MetricCard`, `CtaSection`, `Lightbox`(제어형·키보드), `ImageGrid`. 기존 `FooterSection` 재사용.
+- **미완(자산 대기)**: 성과 사진+앵커 지표 값, `research-deck.pdf`, 연구 도표(figures), **가뭄 슬라이드 텍스트**(이미지로 구워져 자동추출 불가 → 별도 확보). 코드는 전부 빈 상태/placeholder로 정상 렌더.
 
 ### 스타일링 (중요)
 - Tailwind v4 + `@tailwindcss/vite`. `src/index.css`는 `@import "tailwindcss";`가 전부.
@@ -74,6 +82,7 @@
 - 검증 루틴: 변경 후 `npm run build`(tsc -b + vite build)로 타입체크 겸 빌드 확인. **단, `npm run build`는 클라이언트만 검증하고 `api/` 함수는 로컬에서 실행하지 않는다** → 함수 런타임 오류는 배포해야 드러난다. 배포 검증엔 인증된 `npx vercel@latest`(`ls`/`logs <deploy-url> --json`)로 프로덕션 로그를 본다.
 - **ESM 함정 (함수)**: `package.json`이 `"type":"module"`이라 Vercel 함수는 네이티브 ESM으로 실행된다. `api/`의 **상대 import는 반드시 `.js` 확장자**를 붙여야 한다(`'../src/guestbook/validate.js'`). 안 붙이면 런타임 `ERR_MODULE_NOT_FOUND`로 함수가 통째로 죽는데(전 메서드 500 `FUNCTION_INVOCATION_FAILED`), `tsconfig.api.json`의 `moduleResolution:"bundler"`가 확장자 없는 import를 허용해 **로컬 tsc는 통과**한다 → 배포 전엔 안 보이는 함정. (`"bundler"`는 `.js`→`.ts` 매핑을 지원하므로 확장자를 붙여도 타입체크는 통과.)
 - 과거 버그: 여러 섹션 `className` 앞에 선행 백틱(`` `py-20 ``) 오타로 상하 패딩이 빠졌던 이슈 → 전부 수정 완료.
+- **`npm run lint`는 현재 깨져 있음(기존 이슈)**: 설치된 ESLint는 `8.57.1`인데 `eslint.config.js`는 ESLint 9용 API(`eslint/config`의 `defineConfig`/`globalIgnores`, flat-config 플러그인 프리셋)로 작성됨 → 실행 시 `ERR_PACKAGE_PATH_NOT_EXPORTED`로 아예 안 돌아감. 따라서 **검증 게이트는 `npm run build`(tsc+vite) + `npm run test`(vitest)로 잡는다.** lint를 억지로 통과시키려 config를 손대면 react-hooks/react-refresh 커버리지가 조용히 사라지므로 금지. (해결하려면 ESLint 8 호환 flat config로 포팅 또는 ESLint 9 업그레이드 — 별도 작업, 열린 항목.)
 
 ## 5. 열린 항목 (TODO)
 
@@ -83,8 +92,18 @@
 - [ ] (선택) 3대 서비스(리스크 분석/정책 지원/인력 교육)를 About에서 아이콘 리스트로 시각화할지 결정
 - [ ] **학회 종료 후 방명록 롤백**: 최신부터 순서로 `git revert 8d38d43 && git revert -m 1 dd44a9f` → push. 이어 Vercel 환경변수 `GUESTBOOK_*` 삭제 + Marketplace Upstash 제거. 데이터는 `2026-07-28 23:59 KST` 자동 소멸.
 - [ ] 실기기에서 QR(`/guestbook?k=<키>`) 스캔 → 제출까지 완주 테스트(현장 확인)
+- [ ] **성과·홍보 페이지 자산 투입**: 성과 사진(`public/gallery/*.webp`)+`achievementStats` 값, `public/research-deck.pdf`, 연구 도표(figures), **가뭄 슬라이드 텍스트** → 채운 뒤 `main` 머지·push로 배포.
+- [ ] **성과·홍보 진입 링크 배치 재검토**: 현재 `ProjectSection`(주요 연구 과제) 하단. 사용자 제안 = `FocusSection`(주요 연구 분야)로 이동 검토 중. (내 의견은 세션 로그 참고)
+- [ ] (기존 이슈) `eslint.config.js` ESLint 8/9 불일치 정리(4절 참고) — 선택.
 
 ## 6. 세션 로그 (최신이 위로, `/session-log`로 갱신)
+
+### 2026-07-18 — 성과·홍보 페이지 설계→구현(서브에이전트 방식) + 브랜치 push
+- 브레인스토밍으로 두 페이지의 성격을 분리(성과=증거/신뢰, 홍보=내러티브/설득) 후 스펙·계획 문서 작성(main 로컬 커밋 `1b927d9`, `2238f95`, 미push). PPT 검토로 원본이 5장·규칙구조임을 확인 → **이미지/PDF 임베드가 아니라 반응형 HTML 재구성**으로 방향 확정(모바일 가독성 근거).
+- **서브에이전트 구동 개발**로 7개 태스크 실행(각 태스크: 구현 서브에이전트 → 리뷰 서브에이전트 → 수정 루프). 브랜치 `feat/showcase-promo-pages`(base `2238f95`), 9커밋. 31/31 테스트 통과, `npm run build` green, 브라우저로 육안 검증.
+- **발견·수정**: (1) Task1 서브에이전트가 깨진 lint를 억지로 통과시키려 `eslint.config.js`·무관 파일을 수정 → 되돌리고 **검증을 build로 고정**(4절에 기록). (2) 성과 페이지 라이트박스 인덱스가 그룹정렬 순서와 어긋나던 버그 수정(`1f5f0e4`). (3) Lightbox 빈 배열 keydown 가드 추가(`6b2dba5`).
+- **배치 결정**: 리뷰·검증 후 `origin`에 **브랜치만 push**(프로덕션 미반영). 라이브는 자산 채운 뒤 main 머지로.
+- **진입 링크 배치 논의(미결)**: 사용자가 "수행 과제 홍보·연구 성과 링크를 `주요 연구 과제`(ProjectSection)보다 `주요 연구 분야`(FocusSection)에 넣는 게 어떤가" 제안. **내 의견**: 반대 성향. `주요 연구 분야`는 역량(분야) 카드 영역인데 특히 "수행 과제 홍보"는 *과제* 링크라 라벨↔내용이 어긋남. "수행 과제 홍보"는 오히려 `주요 연구 과제`와 동일 도메인. 가시성이 목적이면 섹션 이동보다 **사이트 레벨 내비/바로가기 밴드**로 격상하는 편이 낫다고 봄 → 사용자 결정 대기.
 
 ### 2026-07-17 — 방명록 main 머지 + 배포 검증(ESM 버그 발견·수정)
 - `feat/guestbook`(방명록 20여 커밋)을 **`--no-ff`로 main 머지**(커밋 `dd44a9f`) — fast-forward 시 머지 커밋이 안 생겨 설계 10절의 `revert -m 1` 롤백이 불가하므로 의도적으로 no-ff. push로 프로덕션 배포.
