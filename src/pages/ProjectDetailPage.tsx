@@ -209,15 +209,21 @@ function ProjectDetailPage() {
                   ))}
                 </ol>
 
-                {/* 추진체계도 */}
-                <div className="mt-6">
-                  <MediaFrame
-                    media={project.media?.diagram}
-                    label="추진체계도"
-                    hint="연구 추진 체계 다이어그램을 추가하세요"
-                    icon={Workflow}
-                    natural
-                  />
+                {/* 추진체계도 (1개 또는 여러 개) */}
+                <div className="mt-6 space-y-6">
+                  {(Array.isArray(project.media?.diagram)
+                    ? project.media.diagram
+                    : [project.media?.diagram]
+                  ).map((d, i) => (
+                    <MediaFrame
+                      key={i}
+                      media={d}
+                      label="추진체계도"
+                      hint="연구 추진 체계 다이어그램을 추가하세요"
+                      icon={Workflow}
+                      natural
+                    />
+                  ))}
                 </div>
               </Block>
 
