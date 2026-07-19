@@ -5,7 +5,7 @@
  */
 export function escapeCsvCell(value: string): string {
   let v = value
-  if (/^[=+\-@]/.test(v)) v = "'" + v
+  if (/^[=+\-@\t\r]/.test(v)) v = "'" + v
   if (/[",\n\r]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"'
   return v
 }

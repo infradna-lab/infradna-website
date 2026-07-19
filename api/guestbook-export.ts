@@ -12,9 +12,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' })
   }
 
-  // 쓰기키와 완전히 다른 별도 관리자 시크릿.
+  // 관리자 시크릿은 Authorization: Bearer <key> 헤더로 받는다.
+  // URL 쿼리는 서버 로그·CDN·브라우저 히스토리·Referer에 남아 PII 반환 엔드포인트에 부적절.
   // 환경변수 미설정 시 undefined 비교로 항상 거부(fail closed).
-  const admin = typeof req.query.admin === 'string' ? req.query.admin : ''
+  const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : ''
+  const admin = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : ''
   if (!admin || admin !== process.env.GUESTBOOK_ADMIN_KEY) {
     return res.status(403).json({ error: 'INVALID_KEY' })
   }

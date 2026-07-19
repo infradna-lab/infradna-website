@@ -2,22 +2,13 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Redis } from '@upstash/redis'
 import { validateEntry } from '../src/guestbook/validate.js'
 import type { Entry, PublicEntry } from '../src/guestbook/types.js'
+import { toPublicEntry } from '../src/guestbook/types.js'
 
 /** 두 학회(IAHR-APD2026 · SWGIC2026)가 동시 개최이므로 통합 키 1개를 쓴다. */
 const KEY = 'guestbook:2026'
 const MAX_ENTRIES = 500
 
 const redis = Redis.fromEnv()
-
-function toPublicEntry(e: Entry): PublicEntry {
-  return {
-    id: e.id,
-    name: e.name,
-    affiliation: e.affiliation,
-    message: e.message,
-    createdAt: e.createdAt,
-  }
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') return handleGet(res)

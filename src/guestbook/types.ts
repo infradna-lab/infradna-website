@@ -25,3 +25,14 @@ export type ApiErrorCode =
   | 'CONFIG_ERROR'
   | 'METHOD_NOT_ALLOWED'
   | 'NETWORK_ERROR'
+
+/** 저장 항목을 공개 응답 형태로 투영한다. email·consentAt은 절대 포함되지 않는다. */
+export function toPublicEntry(e: Entry): PublicEntry {
+  return {
+    id: e.id,
+    name: e.name,
+    affiliation: e.affiliation,
+    message: e.message,
+    createdAt: e.createdAt,
+  }
+}
