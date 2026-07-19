@@ -905,10 +905,11 @@ export default GuestbookList
 
 `import type { Entry } from './types'` 를 `import type { PublicEntry } from './types'` 로 바꾸고, `const [entries, setEntries] = useState<Entry[] | null>(null)` 를 `const [entries, setEntries] = useState<PublicEntry[] | null>(null)` 로 바꾼다.
 
-- [ ] **Step 6: 전체 빌드·린트·테스트 (첫 full-green 지점)**
+- [ ] **Step 6: 전체 빌드·테스트 (첫 full-green 지점)**
 
-Run: `npm run build && npm run lint && npx vitest run`
-Expected: 세 명령 모두 성공(빌드 exit 0, 린트 오류 0, 테스트 전부 PASS).
+Run: `npm run build && npx vitest run`
+Expected: 두 명령 모두 성공(빌드 exit 0, 테스트 전부 PASS).
+참고: `npm run lint`는 base부터 깨져 있음(ESLint 8.57.1 설치 vs 설정은 ESLint 9용) → 게이트에서 제외. lint 설정/무관 파일은 건드리지 않는다.
 
 - [ ] **Step 7: 커밋**
 
