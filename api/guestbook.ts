@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Redis } from '@upstash/redis'
 import { validateEntry, isDuplicateEmail } from '../src/guestbook/validate.js'
-import type { Entry, PublicEntry } from '../src/guestbook/types.js'
+import type { Entry, PublicEntry, SubmitResult } from '../src/guestbook/types.js'
 import { toPublicEntry } from '../src/guestbook/types.js'
 
 /** 두 학회(IAHR-APD2026 · SWGIC2026)가 동시 개최이므로 통합 키 1개를 쓴다. */
@@ -51,6 +51,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
   }
 
   // 이메일 중복 판정: 이미 있으면 저장하지 않고 '이미 수령'으로 응답.
+  // 읽기-쓰기가 원자적이지 않아 거의 동시 제출 시 드물게 중복 저장 가능 — 물리 수령은 데스크 통제라 허용.
   let existing: Entry[]
   try {
     existing = await redis.lrange<Entry>(KEY, 0, -1)
@@ -58,7 +59,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
   }
   if (isDuplicateEmail(existing, result.email)) {
-    return res.status(200).json({ status: 'already_claimed' })
+    return res.status(200).json({ status: 'already_claimed' } satisfies SubmitResult)
   }
 
   const expiresAtMs = Date.parse(process.env.GUESTBOOK_EXPIRES_AT ?? '')
@@ -89,7 +90,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
 
     // 응답에도 공개 필드만 돌려준다(이메일 회신 금지).
     const publicEntry = toPublicEntry(entry)
-    return res.status(201).json({ status: 'claimed', entry: publicEntry })
+    return res.status(201).json({ status: 'claimed', entry: publicEntry } satisfies SubmitResult)
   } catch {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
   }
