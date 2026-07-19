@@ -362,7 +362,7 @@ git commit -m "feat: 관리자 CSV export용 인코딩 헬퍼(수식 인젝션 �
   - `type ApiErrorCode` (아래 목록)
   - `GET /api/guestbook` → `{ entries: PublicEntry[] }`
   - `POST /api/guestbook` → 201 `{ entry: PublicEntry }`
-  - `GET /api/guestbook-export?admin=<key>` → `{ entries: Entry[] }`; `&format=csv` → CSV 텍스트
+  - `GET /api/guestbook-export` (인증: `Authorization: Bearer <key>`) → `{ entries: Entry[] }`; `?format=csv` → CSV 텍스트. (Task 3에서는 `?admin=` 쿼리로 구현했으나 최종 리뷰 반영으로 Task 6에서 Bearer 헤더로 변경 — Task 5·관리자 페이지 참고.)
 
 - [ ] **Step 1: 타입 교체** — `src/guestbook/types.ts` 전체를 아래로 교체
 
@@ -957,18 +957,24 @@ Vercel가 `main` 배포를 완료할 때까지 기다린다(대시보드에서 R
 Run: `curl -s https://www.infradna.or.kr/api/guestbook`
 Expected: `{"entries":[...]}` — 각 항목에 `email`·`consentAt` **필드 없음**. (테스트 글을 하나 남긴 뒤 확인하면 명확.)
 
+> **변경(최종 리뷰 반영):** 관리자 시크릿은 URL 쿼리(`?admin=`)가 아니라 **`Authorization: Bearer <키>` 헤더**로 전달한다(전체 PII 반환 엔드포인트의 키가 로그·히스토리에 남지 않도록). 일상 사용은 관리자 페이지 **`/guestbook-admin`**(암호 입력칸)에서 하고, 아래 curl은 검증용이다.
+
 - [ ] **Step 6: 관리자 export 접근 제어 검증**
 
 Run: `curl -s -o /dev/null -w "%{http_code}\n" https://www.infradna.or.kr/api/guestbook-export`
-Expected: `403`
+Expected: `403` (헤더 없음)
 
-Run: `curl -s "https://www.infradna.or.kr/api/guestbook-export?admin=<올바른키>"`
+Run: `curl -s -H "Authorization: Bearer <올바른키>" https://www.infradna.or.kr/api/guestbook-export`
 Expected: `{"entries":[...]}` — `email`·`consentAt` 포함.
 
 - [ ] **Step 7: CSV 다운로드 검증**
 
-Run: `curl -s "https://www.infradna.or.kr/api/guestbook-export?admin=<올바른키>&format=csv" | head`
+Run: `curl -s -H "Authorization: Bearer <올바른키>" "https://www.infradna.or.kr/api/guestbook-export?format=csv" | head`
 Expected: 첫 바이트에 UTF-8 BOM, 헤더 행 `이름,소속,이메일,메시지,동의시각,작성시각`, 한글 정상. 엑셀에서 열어 깨짐 없는지 확인.
+
+- [ ] **Step 7b: 관리자 페이지 검증**
+
+브라우저에서 `https://www.infradna.or.kr/guestbook-admin` 접속 → 비밀키 입력 → '명단 조회'로 표 표시, 'CSV 다운로드' 동작 확인. (키가 주소창/네트워크 URL이 아니라 요청 헤더로만 전송되는지 개발자도구 Network 탭에서 확인.)
 
 - [ ] **Step 8: 동의·이메일 검증 (폼)**
 
