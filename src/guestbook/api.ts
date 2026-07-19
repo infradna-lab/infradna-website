@@ -1,10 +1,12 @@
-import type { ApiErrorCode, Entry } from './types'
+import type { ApiErrorCode, PublicEntry } from './types'
 
 /** 서버는 코드만 준다. 화면 문구는 여기서만 정의한다(서버 문자열을 그대로 렌더하지 않음). */
 const ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   INVALID_KEY: '이 링크로는 글을 남길 수 없습니다. 부스의 QR 코드를 다시 스캔해 주세요.',
-  INVALID_INPUT: '메시지를 1자 이상 100자 이하로 입력해 주세요.',
-  PII_DETECTED: '전화번호나 이메일은 남길 수 없습니다. 연락처를 빼고 다시 시도해 주세요.',
+  INVALID_INPUT: '이름·소속·이메일·메시지를 모두 입력해 주세요.',
+  INVALID_EMAIL: '이메일 주소 형식이 올바르지 않습니다.',
+  PII_DETECTED: '이름·소속·메시지에는 전화번호나 이메일을 넣지 말아 주세요. 이메일은 이메일 칸에만 입력해 주세요.',
+  CONSENT_REQUIRED: '개인정보 수집·이용에 동의해 주세요.',
   STORAGE_ERROR: '잠시 문제가 생겼습니다. 다시 시도해 주세요.',
   CONFIG_ERROR: '잠시 문제가 생겼습니다. 다시 시도해 주세요.',
   METHOD_NOT_ALLOWED: '잠시 문제가 생겼습니다. 다시 시도해 주세요.',
@@ -27,7 +29,7 @@ export function errorMessage(error: unknown): string {
   return ERROR_MESSAGES.NETWORK_ERROR
 }
 
-/** 응답 본문을 JSON으로 읽는다. 파싱에 실패하면(예: 2xx인데 HTML 본문 등) STORAGE_ERROR로 처리. */
+/** 응답 본문을 JSON으로 읽는다. 파싱 실패 시 STORAGE_ERROR. */
 async function parseJson<T>(res: Response): Promise<T> {
   try {
     return (await res.json()) as T
@@ -36,7 +38,7 @@ async function parseJson<T>(res: Response): Promise<T> {
   }
 }
 
-/** 응답 본문에서 에러 코드를 꺼낸다. 본문이 깨져 있으면 STORAGE_ERROR로 처리. */
+/** 응답 본문에서 에러 코드를 꺼낸다. 본문이 깨져 있으면 STORAGE_ERROR. */
 async function toError(res: Response): Promise<GuestbookError> {
   try {
     const body = await parseJson<{ error?: string }>(res)
@@ -44,12 +46,12 @@ async function toError(res: Response): Promise<GuestbookError> {
       return new GuestbookError(body.error as ApiErrorCode)
     }
   } catch {
-    // 본문 파싱 실패, 또는 알 수 없는 에러 코드 — 아래 기본값으로 떨어진다
+    // 파싱 실패 또는 알 수 없는 코드 — 아래 기본값으로.
   }
   return new GuestbookError('STORAGE_ERROR')
 }
 
-export async function fetchEntries(): Promise<Entry[]> {
+export async function fetchEntries(): Promise<PublicEntry[]> {
   let res: Response
   try {
     res = await fetch('/api/guestbook')
@@ -58,15 +60,18 @@ export async function fetchEntries(): Promise<Entry[]> {
   }
   if (!res.ok) throw await toError(res)
 
-  const body = await parseJson<{ entries: Entry[] }>(res)
+  const body = await parseJson<{ entries: PublicEntry[] }>(res)
   return body.entries
 }
 
 export async function postEntry(input: {
   key: string
-  nickname: string
+  name: string
+  affiliation: string
+  email: string
   message: string
-}): Promise<Entry> {
+  consent: boolean
+}): Promise<PublicEntry> {
   let res: Response
   try {
     res = await fetch('/api/guestbook', {
@@ -79,6 +84,6 @@ export async function postEntry(input: {
   }
   if (!res.ok) throw await toError(res)
 
-  const body = await parseJson<{ entry: Entry }>(res)
+  const body = await parseJson<{ entry: PublicEntry }>(res)
   return body.entry
 }

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import type { Entry } from './types'
+import type { PublicEntry } from './types'
 
 function formatTime(iso: string): string {
   const d = new Date(iso)
@@ -8,7 +8,7 @@ function formatTime(iso: string): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${hh}:${mm}`
 }
 
-function GuestbookList({ entries }: { entries: Entry[] }) {
+function GuestbookList({ entries }: { entries: PublicEntry[] }) {
   if (entries.length === 0) {
     return (
       <p className="text-center text-slate-500 py-16 break-keep">
@@ -35,7 +35,10 @@ function GuestbookList({ entries }: { entries: Entry[] }) {
           className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
         >
           <div className="flex items-baseline justify-between gap-3 mb-1.5">
-            <span className="font-semibold text-[#1e3a5f] text-sm break-keep">{entry.nickname}</span>
+            <span className="font-semibold text-[#1e3a5f] text-sm break-keep">
+              {entry.name}
+              <span className="font-normal text-slate-400"> · {entry.affiliation}</span>
+            </span>
             <span className="text-xs text-slate-400 shrink-0">{formatTime(entry.createdAt)}</span>
           </div>
           <p className="text-slate-700 break-keep break-words whitespace-pre-wrap leading-relaxed">

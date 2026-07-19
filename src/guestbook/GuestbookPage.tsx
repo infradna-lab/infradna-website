@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import type { Entry } from './types'
+import type { PublicEntry } from './types'
 import { errorMessage, fetchEntries, postEntry } from './api'
 import GuestbookForm from './GuestbookForm'
 import GuestbookList from './GuestbookList'
@@ -11,7 +11,7 @@ function GuestbookPage() {
   // ?k= 가 있을 때만 폼을 렌더한다. 이것은 경험 분기일 뿐 방어가 아니다(방어는 서버).
   const writeKey = searchParams.get('k')
 
-  const [entries, setEntries] = useState<Entry[] | null>(null)
+  const [entries, setEntries] = useState<PublicEntry[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -29,8 +29,14 @@ function GuestbookPage() {
   }, [load])
 
   const handleSubmit = useCallback(
-    async (input: { nickname: string; message: string }) => {
-      // 새 시도가 시작되면 이전 실패의 잔상을 바로 지운다(재시도 중 오래된 에러가 남지 않도록).
+    async (input: {
+      name: string
+      affiliation: string
+      email: string
+      message: string
+      consent: boolean
+    }) => {
+      // 새 시도가 시작되면 이전 실패의 잔상을 바로 지운다.
       setSubmitError(null)
       try {
         await postEntry({ ...input, key: writeKey ?? '' })
