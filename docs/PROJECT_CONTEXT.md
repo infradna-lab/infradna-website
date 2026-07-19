@@ -29,7 +29,7 @@
 
 ### 라우팅
 - `main.tsx`가 `<App/>`을 `<BrowserRouter>`로 감쌈.
-- 라우트: `/` → `HomePage`, `/projects/:id` → `ProjectDetailPage`, `/achievements` → `AchievementsPage`, `/research` → `ResearchPage` (그리고 기간한정 `/guestbook`).
+- 라우트: `/` → `HomePage`, `/projects/:id` → `ProjectDetailPage`, `/achievements` → `AchievementsPage`, `/research` → `ResearchPage` (그리고 부스용 `/guestbook`·관리자 `/guestbook-admin`).
 - `ScrollManager`(App에 1회 렌더): 이동 시 해시가 있으면 해당 요소로, 없으면 최상단으로 스크롤.
 - `HomePage` 섹션 순서: `HeaderSection → AboutSection → FocusSection → ProjectSection → FooterSection`.
 - `ProjectSection`에 `id="projects"`(뒤로가기 앵커), 카드는 `/projects/:id`로 `<Link>`.
@@ -69,12 +69,14 @@
 - `@vercel/analytics`의 `<Analytics/>`를 `App.tsx`에 추가. **import는 `@vercel/analytics/react`** (Next 아님 — Vite/React SPA이므로 `/next` 사용 금지).
 - **SPA 새로고침 404 대응**: `vercel.json`에 `rewrites: [{ source:"/(.*)", destination:"/index.html" }]`. 정적 파일은 먼저 서빙되므로 안전. **검증 결과 이 리라이트는 `/api/guestbook` 함수를 삼키지 않음**(Vercel이 함수·파일시스템을 리라이트보다 먼저 매칭) → `/api` 예외 규칙 불필요.
 
-### 방명록 (기간 한정, 롤백 전제 — `2026-07-17` 도입)
-- **성격**: IAHR-APD2026 · SWGIC2026 부스용 임시 방명록. 사이트 방향 전환 아님. 학회 종료 후 **머지 커밋 revert로 롤백**. 상세 설계·계획은 `docs/superpowers/specs/2026-07-16-guestbook-design.md`, `docs/superpowers/plans/2026-07-16-guestbook.md`.
-- **경계**: `api/guestbook.ts`(Vercel Function, GET/POST) + `src/guestbook/`(격리 폴더) + `src/App.tsx`에 `/guestbook` 라우트 1줄. 빌드 배관은 `tsconfig.api.json`(api/ 타입체크)·`package.json`의 `vitest`/`test` 스크립트.
-- **데이터**: Upstash Redis 리스트 키 `guestbook:2026` 하나. `LPUSH`+`LTRIM 0 499`+`EXPIREAT`를 `multi()`(원자적)로 묶음. 만료는 `GUESTBOOK_EXPIRES_AT` 절대시각(현재 `2026-07-28T23:59:59+09:00`) → 그 시각에 전체 자동 소멸(롤백 시 지울 데이터 없음). **관리자 삭제 UI 없음** — 지우려면 Redis 키 DEL(REST: `POST {KV_REST_API_URL}/del/guestbook:2026`).
-- **접근/방어**: 읽기 공개, 쓰기는 QR에 심은 `?k=` 키 게이팅. 실제 방어는 **서버**가 `GUESTBOOK_WRITE_KEY`와 대조(프론트 게이팅은 경험 분기일 뿐). PII(전화·이메일) 정규식 검출로 저장 거부.
-- **환경변수**: `GUESTBOOK_WRITE_KEY`, `GUESTBOOK_EXPIRES_AT`(수동), Redis 접속은 `Redis.fromEnv()`가 `UPSTASH_REDIS_REST_URL`/`TOKEN` 없으면 **`KV_REST_API_URL`/`KV_REST_API_TOKEN`로 폴백**(Upstash Marketplace가 주입하는 이름) — 그래서 정상 동작.
+### 방명록 (부스용, 2026-07-17 도입 → **07-19 개인정보 수집형으로 전환**)
+- **성격/전환**: IAHR-APD2026 · SWGIC2026 부스용. **2026-07-19 운영 방침 변경**: 익명 공개 벽 → **참가자 명부(개인정보 수집)**. 목적: 참가자 명부·네트워킹 + 행사 후 연락 + 경품 추첨. 전환 설계·계획: `docs/superpowers/specs/2026-07-19-guestbook-pii-collection-design.md`, `.../plans/2026-07-19-guestbook-pii-collection.md`(A안). 원 익명 방명록 설계는 `2026-07-16-guestbook-*`.
+- **수집·공개 모델(핵심)**: 이름·소속·이메일·메시지 **모두 필수** + **개인정보 수집·이용 동의 체크박스 필수(PIPA)**. **이름·소속·메시지는 공개, 이메일·동의시각(`consentAt`)은 비공개(관리자만)**. 공개 경로는 `PublicEntry`(id·name·affiliation·message·createdAt)로만 투영 → 이메일이 공개 API에 직렬화되지 않음. 투영은 `toPublicEntry` **단일 헬퍼**(types.ts)로 GET·POST 양쪽에서 재사용, `types.test.ts`가 email·consentAt 부재를 검증. 고지문은 초안 — **정확한 법적 문구는 기관 개인정보 보호책임자 확인 필요(열린 항목)**.
+- **경계**: `api/guestbook.ts`(공개 GET 투영·POST) + `api/guestbook-export.ts`(관리자 전용) + `src/guestbook/`(폼·목록·검증·`csv.ts`·`GuestbookAdminPage`) + `/guestbook`·`/guestbook-admin` 라우트. 빌드 배관은 `tsconfig.api.json`·vitest.
+- **데이터**: Upstash Redis 리스트 키 `guestbook:2026`. `LPUSH`+`LTRIM 0 499`+`EXPIREAT`를 `multi()`로 원자화. 절대 만료 `GUESTBOOK_EXPIRES_AT`(현재 `2026-07-28T23:59:59+09:00`)가 곧 **PIPA 보유기간** → 그 시각에 전체 자동 소멸.
+- **검증 반전**: 이메일은 형식검증해 **필수 수집**(과거엔 차단). 단 **공개 필드(이름·소속·메시지)에는 전화·이메일 문자열 차단 유지**(공개 화면에 연락처 박힘 방지; 이메일 전용칸은 예외). 쓰기는 QR `?k=` + 서버가 `GUESTBOOK_WRITE_KEY` 대조(프론트 게이팅은 경험 분기).
+- **관리자 열람(`/guestbook-admin`)**: 비밀키를 **암호 입력칸**에 넣어 **`Authorization: Bearer` 헤더**로 `api/guestbook-export` 호출(명단 표 + CSV 다운로드). **키를 URL/쿼리에 절대 넣지 않음**(최종 리뷰 반영: 전체 PII 반환 엔드포인트의 키가 로그·히스토리에 남는 것 방지). export는 **fail-closed**(헤더 없음/오키/키 미설정 → 403). CSV는 UTF-8 BOM + 수식 인젝션 가드(`= + - @ \t \r`). **삭제 UI 없음** — 지우려면 Upstash REST `LREM`(정확값) 또는 키 DEL.
+- **환경변수**: `GUESTBOOK_WRITE_KEY`, **신규 `GUESTBOOK_ADMIN_KEY`(쓰기키와 다른 별도 시크릿; Vercel Production + 로컬 `.env.local` 양쪽 등록 필수)**, `GUESTBOOK_EXPIRES_AT`(수동). Redis는 `Redis.fromEnv()`가 `UPSTASH_REDIS_REST_URL/TOKEN` 없으면 **`KV_REST_API_URL/TOKEN`로 폴백**(Upstash Marketplace 주입 이름).
 
 ## 4. 컨벤션 / 함정
 
@@ -92,8 +94,10 @@
 - [ ] `og:image`용 공유 이미지(`public/og-image.png`) 추가 및 메타 연결
 - [ ] 라이브 도메인 재배포 확인 + Google Search Console 색인 요청(검색 결과 갱신용)
 - [ ] (선택) 3대 서비스(리스크 분석/정책 지원/인력 교육)를 About에서 아이콘 리스트로 시각화할지 결정
-- [ ] **학회 종료 후 방명록 롤백**: 최신부터 순서로 `git revert 8d38d43 && git revert -m 1 dd44a9f` → push. 이어 Vercel 환경변수 `GUESTBOOK_*` 삭제 + Marketplace Upstash 제거. 데이터는 `2026-07-28 23:59 KST` 자동 소멸.
+- [ ] **방명록 고지문 법적 문구 확정**: 현재 동의 고지문은 초안 → 기관 개인정보 보호책임자 확인 후 `GuestbookForm.tsx` 반영.
+- [ ] **학회 종료 후 방명록 롤백**: PII 전환분은 `feat/guestbook-pii`를 **FF-머지**(머지 커밋 없음, `f1c9ba6..5e722be` 범위)했으므로 revert는 범위 되돌리기 또는 guestbook 파일 제거로. 원 방명록(`dd44a9f` no-ff 머지)도 함께 정리. 이어 Vercel 환경변수 `GUESTBOOK_*`(**`GUESTBOOK_ADMIN_KEY` 포함**) 삭제 + Marketplace Upstash 제거. 데이터는 `2026-07-28 23:59 KST` 자동 소멸.
 - [ ] 실기기에서 QR(`/guestbook?k=<키>`) 스캔 → 제출까지 완주 테스트(현장 확인)
+- [ ] (선택) 방명록 관리자 페이지 폴리시(비블로킹, 최종 리뷰 Minor): consentAt를 관리자 표에도 표시(동의 증빙 감사뷰), 비밀키 입력 trim, `KEY='guestbook:2026'` 두 api 파일 공유 상수화, export 500 로깅.
 - [ ] **연구 성과 페이지(/achievements) 정리**: About 링크 제거로 도달 경로 없음 → 라우트·페이지·`gallery.ts`·`ImageGrid` 완전 삭제할지 결정(현재는 남겨둠). 살릴 경우 성과 사진(`public/gallery/*.webp`)+`achievementStats` 투입 필요.
 - [ ] **가뭄 연구 도표 화질**: `/research` 가뭄 도표 원본이 640px로 다른 테마보다 저해상도 → 더 큰 원본 있으면 교체.
 - [ ] **id:5 연구기간 확인**: 현재 `2023 - 2026`으로 두었으나 2단계로 이어지는 사업이라 종료연도 불확실 → 정확한 기간 확인 후 `projects.ts` 갱신.
@@ -102,7 +106,15 @@
 
 ## 6. 세션 로그 (최신이 위로, `/session-log`로 갱신)
 
-### 2026-07-19 — 성과·홍보 페이지 프로덕션 반영 + 5개 연구 과제 실제 콘텐츠·이미지 전면 채움
+### 2026-07-19 (오후) — 방명록 개인정보 수집형 전환 설계→구현→배포·검증
+- **운영 방침 변경**: 익명 공개 벽 → 참가자 명부(이름·소속·이메일·메시지 + PIPA 동의). 브레인스토밍으로 목적·공개범위·동의·관리자 열람을 확정하고 스펙·계획 문서화(A안: 단일 리스트 + 공개 투영 + 별도 관리자 export). 첫 작업으로 기존 테스트 글 2건 삭제.
+- **서브에이전트 구동 개발**: 브랜치 `feat/guestbook-pii`(base `f1c9ba6`), Task1 검증반전→Task2 CSV헬퍼→Task3 백엔드→Task4 프론트엔드, 각 태스크 구현+리뷰(spec+quality) 루프. 검증 게이트는 `build`+`vitest`(lint는 base부터 깨짐, 4절). 43/43 테스트.
+- **최종 전체 리뷰(opus)에서 Important 2건**: ①관리자 export 시크릿을 `?admin=` URL→**`Authorization: Bearer` 헤더**로(전체 PII 반환 엔드포인트 키가 로그에 남는 문제) ②이메일 유출 불변식 테스트 부재. 사용자 결정으로 **`/guestbook-admin` 관리자 페이지 신설**(키 암호칸→헤더) + `toPublicEntry`를 types.ts로 옮겨 `types.test.ts`로 불변식 고정 + CSV 가드에 `\t \r` 추가(Task6, 커밋 `72fbcfd`).
+- **배포**: `GUESTBOOK_ADMIN_KEY` 로컬 `.env.local` + Vercel Production 등록 후 `feat/guestbook-pii`를 main **FF-머지**(`f1c9ba6..5e722be`, 8커밋) + push → 자동 배포. 브랜치 삭제.
+- **프로덕션 검증(왕복)**: export는 헤더없음/오키/구쿼리 모두 403·올바른 Bearer 200; 이메일 포함 글 제출 → **공개 GET엔 email·consentAt 없음, 관리자 export엔 있음**, CSV(BOM+헤더+행) 정상. 검증글·세션 중 유입된 구스키마 테스트글(리뷰어가 예고한 legacy-entry, 유출 없음) 모두 `LREM` 정리 → 리스트 빈 상태.
+- **함정 메모**: 자동승인 분류기가 `.env.local` source + 외부 curl + 파괴적 Redis 쓰기를 묶은 컴파운드 명령을 차단할 수 있음 → 읽기/파일작성/쓰기를 **단계 분리**하면 통과. heredoc과 파이프를 함께 stdin으로 주면 충돌(파이프 대신 값을 파일로).
+
+### 2026-07-19 (오전) — 성과·홍보 페이지 프로덕션 반영 + 5개 연구 과제 실제 콘텐츠·이미지 전면 채움
 - `feat/showcase-promo-pages`를 main 머지·push로 **프로덕션 배포**(라이브 반영을 번들 해시로 검증하는 루틴 사용: 로컬 `dist/index.html`의 `index-*.js`와 `curl https://www.infradna.or.kr/` 비교, ~45초).
 - **5개 주요 연구 과제(`projects.ts`) 실제 자료로 교체**: 각 과제 발표자료/PDF(사용자가 `docs/<과제폴더>/`에 투입)를 읽고 본문·이미지 매핑. 이미지는 `pdftoppm`/`sips`/pptx media 추출로 최적화해 `public/projects/`에 배치, 원본은 gitignore. 상세 페이지에 **`natural`(원본 비율)·`diagram` 배열(추진내용 다중 이미지)·`outputs`(연구 성과물 블록)** 추가, **진척도 바 제거**.
 - **"우리의 연구"(/research) v4 최종본 반영**: 업데이트된 부스홍보 v4 pptx로 4테마 전면 갱신(**가뭄 5개 분야 완성**). 각 테마 **연구 도표**를 pptx `ppt/media/`에서 원본 추출해 삽입(폭염2·홍수2·가뭄5, 한파는 도표 없어 미표시). **PDF 다운로드 실제 구현**(`soffice`로 v4→PDF, `public/research-deck.pdf`).
