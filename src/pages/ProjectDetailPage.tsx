@@ -119,11 +119,8 @@ function ProjectDetailPage() {
   const prev = index > 0 ? projects[index - 1] : null
   const next = index < projects.length - 1 ? projects[index + 1] : null
 
-  // 성과 이미지: 데이터가 있으면 사용, 없으면 자리 3칸을 보여준다.
-  const gallery: (MediaItem | undefined)[] =
-    project.media?.gallery && project.media.gallery.length > 0
-      ? project.media.gallery
-      : [undefined, undefined, undefined]
+  // 성과 이미지: 데이터가 있는 과제만 '연구 성과' 블록을 노출한다.
+  const gallery = project.media?.gallery ?? []
 
   return (
     <div className="min-h-screen bg-white">
@@ -160,16 +157,17 @@ function ProjectDetailPage() {
       {/* Body */}
       <section className="px-4 md:px-8 py-16 md:py-24">
         <div className="max-w-5xl mx-auto">
-          {/* 대표 이미지 */}
-          <div className="mb-16">
-            <MediaFrame
-              media={project.media?.hero}
-              label="대표 이미지"
-              hint="연구를 대표하는 이미지를 추가하세요"
-              aspect="aspect-[21/9]"
-              natural
-            />
-          </div>
+          {/* 대표 이미지 (준비된 과제만 노출) */}
+          {project.media?.hero && (
+            <div className="mb-16">
+              <MediaFrame
+                media={project.media.hero}
+                label="대표 이미지"
+                aspect="aspect-[21/9]"
+                natural
+              />
+            </div>
+          )}
 
           <div className="grid lg:grid-cols-3 gap-12 lg:gap-16">
             {/* Main column */}
@@ -209,22 +207,17 @@ function ProjectDetailPage() {
                   ))}
                 </ol>
 
-                {/* 추진체계도 (1개 또는 여러 개) */}
-                <div className="mt-6 space-y-6">
-                  {(Array.isArray(project.media?.diagram)
-                    ? project.media.diagram
-                    : [project.media?.diagram]
-                  ).map((d, i) => (
-                    <MediaFrame
-                      key={i}
-                      media={d}
-                      label="추진체계도"
-                      hint="연구 추진 체계 다이어그램을 추가하세요"
-                      icon={Workflow}
-                      natural
-                    />
-                  ))}
-                </div>
+                {/* 추진체계도 (준비된 과제만 노출, 1개 또는 여러 개) */}
+                {project.media?.diagram && (
+                  <div className="mt-6 space-y-6">
+                    {(Array.isArray(project.media.diagram)
+                      ? project.media.diagram
+                      : [project.media.diagram]
+                    ).map((d, i) => (
+                      <MediaFrame key={i} media={d} label="추진체계도" icon={Workflow} natural />
+                    ))}
+                  </div>
+                )}
               </Block>
 
               <Block icon={Sparkles} title="기대효과 및 활용방안">
@@ -251,20 +244,21 @@ function ProjectDetailPage() {
                 </Block>
               )}
 
-              {/* 연구 성과 이미지 */}
-              <Block icon={Images} title="연구 성과">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  {gallery.map((item, i) => (
-                    <MediaFrame
-                      key={i}
-                      media={item}
-                      label={`성과 이미지 ${i + 1}`}
-                      hint="이미지 추가"
-                      aspect="aspect-[4/3]"
-                    />
-                  ))}
-                </div>
-              </Block>
+              {/* 연구 성과 이미지 (준비된 과제만 노출) */}
+              {gallery.length > 0 && (
+                <Block icon={Images} title="연구 성과">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {gallery.map((item, i) => (
+                      <MediaFrame
+                        key={i}
+                        media={item}
+                        label={`성과 이미지 ${i + 1}`}
+                        aspect="aspect-[4/3]"
+                      />
+                    ))}
+                  </div>
+                </Block>
+              )}
             </div>
 
             {/* Sidebar */}
