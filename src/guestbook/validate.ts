@@ -64,3 +64,17 @@ export function validateEntry(input: ValidationInput): ValidationResult {
 
   return { ok: true, name, affiliation, email, message }
 }
+
+/** 이메일 비교용 정규화 — 앞뒤 공백 제거 + 소문자. 저장값이 아니라 대조에만 쓴다. */
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+/** 정규화 기준으로 같은 이메일이 이미 목록에 있는지. */
+export function isDuplicateEmail(
+  existing: readonly { email: string }[],
+  email: string,
+): boolean {
+  const target = normalizeEmail(email)
+  return existing.some((e) => normalizeEmail(e.email) === target)
+}

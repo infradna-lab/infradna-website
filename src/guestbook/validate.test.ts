@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateEntry } from './validate'
+import { validateEntry, normalizeEmail, isDuplicateEmail } from './validate'
 
 const valid = {
   name: '홍길동',
@@ -97,5 +97,28 @@ describe('validateEntry', () => {
     ['버전 1.0.5 업데이트', '버전 표기'],
   ])('전화번호가 아닌 숫자는 통과: %s (%s)', (message) => {
     expect(validateEntry({ ...valid, message }).ok).toBe(true)
+  })
+})
+
+describe('normalizeEmail', () => {
+  it('trim + 소문자로 정규화한다', () => {
+    expect(normalizeEmail('  Hong@Example.COM ')).toBe('hong@example.com')
+  })
+})
+
+describe('isDuplicateEmail', () => {
+  const list = [{ email: 'a@example.com' }, { email: 'B@Example.com' }]
+
+  it('대소문자·공백 무시하고 존재하면 true', () => {
+    expect(isDuplicateEmail(list, 'A@EXAMPLE.COM')).toBe(true)
+    expect(isDuplicateEmail(list, ' b@example.com ')).toBe(true)
+  })
+
+  it('없으면 false', () => {
+    expect(isDuplicateEmail(list, 'new@example.com')).toBe(false)
+  })
+
+  it('빈 리스트면 false', () => {
+    expect(isDuplicateEmail([], 'a@example.com')).toBe(false)
   })
 })
