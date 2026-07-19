@@ -1,37 +1,66 @@
-export const NICKNAME_MAX = 12
+export const NAME_MAX = 20
+export const AFFILIATION_MAX = 40
+export const EMAIL_MAX = 100
 export const MESSAGE_MAX = 100
-export const DEFAULT_NICKNAME = '익명 방문자'
 
 /**
- * 방문객이 스스로 적어 넣는 연락처를 걸러낸다.
- * 휴대전화(010~019)뿐 아니라 070 인터넷전화, 지역번호 유선전화(02, 031, 032 등)까지
- * "0으로 시작하는 8~11자리 번호" 형태로 폭넓게 잡아낸다. 국제 표기(+82, +1 등)는 범위 밖이다.
- * 앞자리 0을 필수로 요구해 2026 같은 연도 표기가 오탐되지 않도록 한다.
- * 의도적 한계: "공대 김씨"처럼 패턴에 걸리지 않는 자기 식별은 통과한다.
- * 실질 위험(연락처가 공개 페이지에 박제되는 것)만 차단하는 것이 목표다.
+ * 공개되는 이름·소속·메시지에 사용자가 적어 넣는 연락처를 걸러낸다.
+ * 이메일은 전용 칸으로 받으므로 이 검사 대상에서 제외한다.
  */
 const PHONE = /0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}/
-const EMAIL = /[\w.+-]+@[\w-]+\.[\w.]+/
+const EMAIL_IN_TEXT = /[\w.+-]+@[\w-]+\.[\w.]+/
+/** 이메일 칸 형식 검증 — 문자열 전체가 하나의 주소여야 한다(앵커). */
+const EMAIL_FORMAT = /^[\w.+-]+@[\w-]+\.[\w.]+$/
+
+export type ValidationInput = {
+  name?: string
+  affiliation?: string
+  email?: string
+  message?: string
+  consent?: boolean
+}
+
+export type ValidationError =
+  | 'INVALID_INPUT'
+  | 'INVALID_EMAIL'
+  | 'PII_DETECTED'
+  | 'CONSENT_REQUIRED'
 
 export type ValidationResult =
-  | { ok: true; nickname: string; message: string }
-  | { ok: false; error: 'INVALID_INPUT' | 'PII_DETECTED' }
+  | { ok: true; name: string; affiliation: string; email: string; message: string }
+  | { ok: false; error: ValidationError }
 
-export function validateEntry(input: { nickname?: string; message?: string }): ValidationResult {
-  const nickname = (input.nickname ?? '').trim()
+export function validateEntry(input: ValidationInput): ValidationResult {
+  const name = (input.name ?? '').trim()
+  const affiliation = (input.affiliation ?? '').trim()
+  const email = (input.email ?? '').trim()
   const message = (input.message ?? '').trim()
 
-  if (message.length === 0 || message.length > MESSAGE_MAX) {
-    return { ok: false, error: 'INVALID_INPUT' }
-  }
-  if (nickname.length > NICKNAME_MAX) {
+  // 1) 필수 + 길이
+  if (
+    name.length === 0 || name.length > NAME_MAX ||
+    affiliation.length === 0 || affiliation.length > AFFILIATION_MAX ||
+    email.length === 0 || email.length > EMAIL_MAX ||
+    message.length === 0 || message.length > MESSAGE_MAX
+  ) {
     return { ok: false, error: 'INVALID_INPUT' }
   }
 
-  const containsPii = (text: string) => PHONE.test(text) || EMAIL.test(text)
-  if (containsPii(message) || containsPii(nickname)) {
+  // 2) 이메일 형식
+  if (!EMAIL_FORMAT.test(email)) {
+    return { ok: false, error: 'INVALID_EMAIL' }
+  }
+
+  // 3) 공개 필드의 연락처 차단 (이메일 칸 제외)
+  const hasContact = (t: string) => PHONE.test(t) || EMAIL_IN_TEXT.test(t)
+  if (hasContact(name) || hasContact(affiliation) || hasContact(message)) {
     return { ok: false, error: 'PII_DETECTED' }
   }
 
-  return { ok: true, nickname: nickname || DEFAULT_NICKNAME, message }
+  // 4) 동의
+  if (input.consent !== true) {
+    return { ok: false, error: 'CONSENT_REQUIRED' }
+  }
+
+  return { ok: true, name, affiliation, email, message }
 }
