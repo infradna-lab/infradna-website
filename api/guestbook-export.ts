@@ -26,7 +26,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
   }
 
-  if (req.query.format === 'csv') {
+  const format = typeof req.query.format === 'string' ? req.query.format : ''
+  if (format === 'csv') {
     const header = ['이름', '소속', '이메일', '메시지', '동의시각', '작성시각']
     const rows = entries.map((e) => [
       e.name,

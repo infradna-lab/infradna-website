@@ -9,6 +9,16 @@ const MAX_ENTRIES = 500
 
 const redis = Redis.fromEnv()
 
+function toPublicEntry(e: Entry): PublicEntry {
+  return {
+    id: e.id,
+    name: e.name,
+    affiliation: e.affiliation,
+    message: e.message,
+    createdAt: e.createdAt,
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') return handleGet(res)
   if (req.method === 'POST') return handlePost(req, res)
@@ -21,13 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function handleGet(res: VercelResponse) {
   try {
     const entries = await redis.lrange<Entry>(KEY, 0, -1)
-    const publicEntries: PublicEntry[] = entries.map((e) => ({
-      id: e.id,
-      name: e.name,
-      affiliation: e.affiliation,
-      message: e.message,
-      createdAt: e.createdAt,
-    }))
+    const publicEntries: PublicEntry[] = entries.map(toPublicEntry)
     return res.status(200).json({ entries: publicEntries })
   } catch {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
@@ -82,13 +86,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
       .exec()
 
     // 응답에도 공개 필드만 돌려준다(이메일 회신 금지).
-    const publicEntry: PublicEntry = {
-      id: entry.id,
-      name: entry.name,
-      affiliation: entry.affiliation,
-      message: entry.message,
-      createdAt: entry.createdAt,
-    }
+    const publicEntry = toPublicEntry(entry)
     return res.status(201).json({ entry: publicEntry })
   } catch {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
