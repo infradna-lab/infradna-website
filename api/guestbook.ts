@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Redis } from '@upstash/redis'
 import { validateEntry } from '../src/guestbook/validate.js'
-import type { Entry } from '../src/guestbook/types.js'
+import type { Entry, PublicEntry } from '../src/guestbook/types.js'
 
 /** 두 학회(IAHR-APD2026 · SWGIC2026)가 동시 개최이므로 통합 키 1개를 쓴다. */
 const KEY = 'guestbook:2026'
@@ -17,10 +17,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' })
 }
 
+/** 공개 목록. 이메일·동의시각은 절대 내보내지 않는다(PublicEntry로 투영). */
 async function handleGet(res: VercelResponse) {
   try {
     const entries = await redis.lrange<Entry>(KEY, 0, -1)
-    return res.status(200).json({ entries })
+    const publicEntries: PublicEntry[] = entries.map((e) => ({
+      id: e.id,
+      name: e.name,
+      affiliation: e.affiliation,
+      message: e.message,
+      createdAt: e.createdAt,
+    }))
+    return res.status(200).json({ entries: publicEntries })
   } catch {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
   }
@@ -37,39 +45,51 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
   }
 
   const result = validateEntry({
-    nickname: typeof body.nickname === 'string' ? body.nickname : '',
+    name: typeof body.name === 'string' ? body.name : '',
+    affiliation: typeof body.affiliation === 'string' ? body.affiliation : '',
+    email: typeof body.email === 'string' ? body.email : '',
     message: typeof body.message === 'string' ? body.message : '',
+    consent: body.consent === true,
   })
   if (!result.ok) {
     return res.status(400).json({ error: result.error })
   }
 
   const expiresAtMs = Date.parse(process.env.GUESTBOOK_EXPIRES_AT ?? '')
-  // 파싱 실패뿐 아니라 과거 시각도 거부한다. 과거 시각으로 EXPIREAT를 걸면
-  // Redis가 키를 즉시 삭제해 글은 201로 "저장됨" 응답을 받고도 목록에서 사라진다.
+  // 파싱 실패뿐 아니라 과거 시각도 거부한다(과거 EXPIREAT는 키를 즉시 삭제).
   if (Number.isNaN(expiresAtMs) || expiresAtMs <= Date.now()) {
     return res.status(500).json({ error: 'CONFIG_ERROR' })
   }
 
+  const now = new Date().toISOString()
   const entry: Entry = {
     id: crypto.randomUUID(),
-    nickname: result.nickname,
+    name: result.name,
+    affiliation: result.affiliation,
+    email: result.email,
     message: result.message,
-    createdAt: new Date().toISOString(),
+    consentAt: now,
+    createdAt: now,
   }
 
   try {
-    // multi()로 세 명령을 하나의 트랜잭션으로 묶는다. lpush만 성공하고
-    // ltrim/expireat가 네트워크 오류로 실패하면 TTL 없는 엔트리가 영구히
-    // 남는데, 트랜잭션은 전부 성공하거나 전부 실패하므로 그 상태를 막는다.
-    // 슬라이딩이 아닌 절대 만료. 마지막 글이 언제 올라오든 예정 시각에 전체 소멸.
+    // multi()로 세 명령을 트랜잭션으로 묶는다(부분 성공 방지). 절대 만료 TTL.
     await redis
       .multi()
       .lpush(KEY, entry)
       .ltrim(KEY, 0, MAX_ENTRIES - 1)
       .expireat(KEY, Math.floor(expiresAtMs / 1000))
       .exec()
-    return res.status(201).json({ entry })
+
+    // 응답에도 공개 필드만 돌려준다(이메일 회신 금지).
+    const publicEntry: PublicEntry = {
+      id: entry.id,
+      name: entry.name,
+      affiliation: entry.affiliation,
+      message: entry.message,
+      createdAt: entry.createdAt,
+    }
+    return res.status(201).json({ entry: publicEntry })
   } catch {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
   }
