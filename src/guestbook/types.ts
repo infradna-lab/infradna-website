@@ -26,6 +26,11 @@ export type ApiErrorCode =
   | 'METHOD_NOT_ALLOWED'
   | 'NETWORK_ERROR'
 
+/** 방명록 제출 결과. claimed=첫 작성(키캡 수령 대상), already_claimed=이메일 중복(이미 수령). */
+export type SubmitResult =
+  | { status: 'claimed'; entry: PublicEntry }
+  | { status: 'already_claimed' }
+
 /** 저장 항목을 공개 응답 형태로 투영한다. email·consentAt은 절대 포함되지 않는다. */
 export function toPublicEntry(e: Entry): PublicEntry {
   return {

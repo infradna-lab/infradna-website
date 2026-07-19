@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Redis } from '@upstash/redis'
-import { validateEntry } from '../src/guestbook/validate.js'
+import { validateEntry, isDuplicateEmail } from '../src/guestbook/validate.js'
 import type { Entry, PublicEntry } from '../src/guestbook/types.js'
 import { toPublicEntry } from '../src/guestbook/types.js'
 
@@ -50,6 +50,17 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: result.error })
   }
 
+  // 이메일 중복 판정: 이미 있으면 저장하지 않고 '이미 수령'으로 응답.
+  let existing: Entry[]
+  try {
+    existing = await redis.lrange<Entry>(KEY, 0, -1)
+  } catch {
+    return res.status(500).json({ error: 'STORAGE_ERROR' })
+  }
+  if (isDuplicateEmail(existing, result.email)) {
+    return res.status(200).json({ status: 'already_claimed' })
+  }
+
   const expiresAtMs = Date.parse(process.env.GUESTBOOK_EXPIRES_AT ?? '')
   // 파싱 실패뿐 아니라 과거 시각도 거부한다(과거 EXPIREAT는 키를 즉시 삭제).
   if (Number.isNaN(expiresAtMs) || expiresAtMs <= Date.now()) {
@@ -78,7 +89,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
 
     // 응답에도 공개 필드만 돌려준다(이메일 회신 금지).
     const publicEntry = toPublicEntry(entry)
-    return res.status(201).json({ entry: publicEntry })
+    return res.status(201).json({ status: 'claimed', entry: publicEntry })
   } catch {
     return res.status(500).json({ error: 'STORAGE_ERROR' })
   }
