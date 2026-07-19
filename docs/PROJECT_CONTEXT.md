@@ -29,7 +29,7 @@
 
 ### 라우팅
 - `main.tsx`가 `<App/>`을 `<BrowserRouter>`로 감쌈.
-- 라우트: `/` → `HomePage`, `/projects/:id` → `ProjectDetailPage`, `/achievements` → `AchievementsPage`, `/research` → `ResearchPage` (그리고 부스용 `/guestbook`·관리자 `/guestbook-admin`).
+- 라우트: `/` → `HomePage`, `/projects/:id` → `ProjectDetailPage`, `/achievements` → `AchievementsPage`, `/research` → `ResearchPage` (그리고 부스용 `/guestbook`·`/guestbook/keycap`·관리자 `/guestbook-admin`).
 - `ScrollManager`(App에 1회 렌더): 이동 시 해시가 있으면 해당 요소로, 없으면 최상단으로 스크롤.
 - `HomePage` 섹션 순서: `HeaderSection → AboutSection → FocusSection → ProjectSection → FooterSection`.
 - `ProjectSection`에 `id="projects"`(뒤로가기 앵커), 카드는 `/projects/:id`로 `<Link>`.
@@ -77,6 +77,7 @@
 - **검증 반전**: 이메일은 형식검증해 **필수 수집**(과거엔 차단). 단 **공개 필드(이름·소속·메시지)에는 전화·이메일 문자열 차단 유지**(공개 화면에 연락처 박힘 방지; 이메일 전용칸은 예외). 쓰기는 QR `?k=` + 서버가 `GUESTBOOK_WRITE_KEY` 대조(프론트 게이팅은 경험 분기).
 - **관리자 열람(`/guestbook-admin`)**: 비밀키를 **암호 입력칸**에 넣어 **`Authorization: Bearer` 헤더**로 `api/guestbook-export` 호출(명단 표 + CSV 다운로드). **키를 URL/쿼리에 절대 넣지 않음**(최종 리뷰 반영: 전체 PII 반환 엔드포인트의 키가 로그·히스토리에 남는 것 방지). export는 **fail-closed**(헤더 없음/오키/키 미설정 → 403). CSV는 UTF-8 BOM + 수식 인젝션 가드(`= + - @ \t \r`). **삭제 UI 없음** — 지우려면 Upstash REST `LREM`(정확값) 또는 키 DEL.
 - **환경변수**: `GUESTBOOK_WRITE_KEY`, **신규 `GUESTBOOK_ADMIN_KEY`(쓰기키와 다른 별도 시크릿; Vercel Production + 로컬 `.env.local` 양쪽 등록 필수)**, `GUESTBOOK_EXPIRES_AT`(수동). Redis는 `Redis.fromEnv()`가 `UPSTASH_REDIS_REST_URL/TOKEN` 없으면 **`KV_REST_API_URL/TOKEN`로 폴백**(Upstash Marketplace 주입 이름).
+- **키캡 수령(2026-07-19 추가)**: 방명록 작성자에게 키캡 키링을 나눠주는 흐름. 설계·계획 `docs/superpowers/{specs,plans}/2026-07-19-keycap-coupon*`. **식별키는 이메일** — POST가 저장 전 `isDuplicateEmail`(정규화: trim+소문자, 비교 전용)로 판정해 **신규면 저장 후 201 `{status:'claimed', entry}`, 중복이면 저장하지 않고 200 `{status:'already_claimed'}`**(응답에 데이터 없음). 즉 **이메일당 방명록 1건 = 유니크 참가자**. 응답 리터럴에 `satisfies SubmitResult`로 형태를 컴파일 강제. 프론트는 제출 성공 시 `/guestbook/keycap`로 이동(router state로 status 전달), `KeycapPage`가 수령/이미수령/중립(직접접근·새로고침 폴백) 3분기 렌더. 키캡 사진 `public/keycap.png`(로드 실패 시 점선 placeholder). **위변조 방어 없음** — 물리 수령은 안내 데스크 직원 육안 확인이 통제점이라 의도적으로 생략. 알려진 수용 리스크: dedup 읽기와 저장이 원자적이지 않아(TOCTOU) 거의 동시 제출 시 드물게 중복 저장 가능.
 
 ## 4. 컨벤션 / 함정
 
@@ -96,7 +97,7 @@
 - [ ] (선택) 3대 서비스(리스크 분석/정책 지원/인력 교육)를 About에서 아이콘 리스트로 시각화할지 결정
 - [ ] **방명록 고지문 법적 문구 확정**: 현재 동의 고지문은 초안 → 기관 개인정보 보호책임자 확인 후 `GuestbookForm.tsx` 반영.
 - [ ] **학회 종료 후 방명록 롤백**: PII 전환분은 `feat/guestbook-pii`를 **FF-머지**(머지 커밋 없음, `f1c9ba6..5e722be` 범위)했으므로 revert는 범위 되돌리기 또는 guestbook 파일 제거로. 원 방명록(`dd44a9f` no-ff 머지)도 함께 정리. 이어 Vercel 환경변수 `GUESTBOOK_*`(**`GUESTBOOK_ADMIN_KEY` 포함**) 삭제 + Marketplace Upstash 제거. 데이터는 `2026-07-28 23:59 KST` 자동 소멸.
-- [ ] 실기기에서 QR(`/guestbook?k=<키>`) 스캔 → 제출까지 완주 테스트(현장 확인)
+- [ ] 실기기에서 QR(`/guestbook?k=<키>`) 스캔 → 제출까지 완주 테스트(현장 확인). **이때 키캡 'claimed' 화면(키캡 사진+수령 안내)의 실제 시각도 함께 확인** — API·중립폴백은 프로덕션 검증 완료했으나 claimed 화면은 실제 제출이 필요해 미확인.
 - [ ] (선택) 방명록 관리자 페이지 폴리시(비블로킹, 최종 리뷰 Minor): consentAt를 관리자 표에도 표시(동의 증빙 감사뷰), 비밀키 입력 trim, `KEY='guestbook:2026'` 두 api 파일 공유 상수화, export 500 로깅.
 - [ ] **연구 성과 페이지(/achievements) 정리**: About 링크 제거로 도달 경로 없음 → 라우트·페이지·`gallery.ts`·`ImageGrid` 완전 삭제할지 결정(현재는 남겨둠). 살릴 경우 성과 사진(`public/gallery/*.webp`)+`achievementStats` 투입 필요.
 - [ ] **가뭄 연구 도표 화질**: `/research` 가뭄 도표 원본이 640px로 다른 테마보다 저해상도 → 더 큰 원본 있으면 교체.
@@ -105,6 +106,13 @@
 - [ ] (기존 이슈) `eslint.config.js` ESLint 8/9 불일치 정리(4절 참고) — 선택.
 
 ## 6. 세션 로그 (최신이 위로, `/session-log`로 갱신)
+
+### 2026-07-19 (저녁) — 키캡 수령 페이지(이메일 중복 판정) 설계→구현→배포·검증
+- **요구**: 방명록 작성자에게 키캡 지급. 쿠폰 코드 생성 없이 "안내 데스크에서 수령하세요" 화면 + 키캡 사진만. 이미 작성한 사람은 "이미 수령하셨습니다".
+- **핵심 결정(식별 방법)**: 후보 3안 중 **이메일 기준 서버 판정** 채택 — 이미 필수 수집 중이라 추가 식별수단이 불필요하고, localStorage/쿠키와 달리 캐시삭제·다른 기기·시크릿모드로 우회되지 않으며 부스 공용기기에서도 오작동 없음. 이름+소속 조합은 동명이인·오타로 오판 위험. **재제출 시 글은 저장하지 않음**(이메일당 1건 = 유니크 참가자, 목록 중복 방지).
+- **구현**: 서브에이전트 4태스크(순수 dedup 함수 TDD → 백엔드 응답상태 → 프론트 수령페이지 → 배포). 각 태스크 spec+quality 리뷰 통과, 최종 opus 전체 리뷰 **Ready to merge: Yes**(Critical/Important 0). 리뷰 반영 폴리시: 응답 리터럴에 `satisfies SubmitResult`(형태 드리프트 방지) + TOCTOU 주석.
+- **배포·검증**: 실물 키캡 사진(`docs/키캡.png` 752×420)을 `public/keycap.png`로 배치하고 랜드스케이프에 맞게 표시비율 조정. main FF-merge + push. 프로덕션 왕복 검증 전부 통과 — 신규→claimed, 재제출→already_claimed, **대소문자+공백 변형도 already_claimed**(정규화 작동), 관리자 export에 1건만(중복 미저장), 공개 GET에 email 없음, `/guestbook/keycap` 중첩 라우트 SPA 서빙 200, 브라우저 렌더·콘솔 정상. 검증글만 정리(사용자 실제 글 보존).
+- **의도적 비목표**: 수령 페이지 위변조 방어(직접 URL 접근으로 claimed 강제 노출) — 물리 수령은 데스크 직원이 통제하므로 과설계로 판단.
 
 ### 2026-07-19 (오후) — 방명록 개인정보 수집형 전환 설계→구현→배포·검증
 - **운영 방침 변경**: 익명 공개 벽 → 참가자 명부(이름·소속·이메일·메시지 + PIPA 동의). 브레인스토밍으로 목적·공개범위·동의·관리자 열람을 확정하고 스펙·계획 문서화(A안: 단일 리스트 + 공개 투영 + 별도 관리자 export). 첫 작업으로 기존 테스트 글 2건 삭제.
