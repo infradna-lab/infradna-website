@@ -1,4 +1,4 @@
-import type { ApiErrorCode, PublicEntry } from './types'
+import type { ApiErrorCode, PublicEntry, SubmitResult } from './types'
 
 /** 서버는 코드만 준다. 화면 문구는 여기서만 정의한다(서버 문자열을 그대로 렌더하지 않음). */
 const ERROR_MESSAGES: Record<ApiErrorCode, string> = {
@@ -71,7 +71,7 @@ export async function postEntry(input: {
   email: string
   message: string
   consent: boolean
-}): Promise<PublicEntry> {
+}): Promise<SubmitResult> {
   let res: Response
   try {
     res = await fetch('/api/guestbook', {
@@ -84,6 +84,5 @@ export async function postEntry(input: {
   }
   if (!res.ok) throw await toError(res)
 
-  const body = await parseJson<{ entry: PublicEntry }>(res)
-  return body.entry
+  return parseJson<SubmitResult>(res)
 }

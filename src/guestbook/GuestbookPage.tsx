@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import type { PublicEntry } from './types'
 import { errorMessage, fetchEntries, postEntry } from './api'
@@ -10,6 +10,7 @@ function GuestbookPage() {
   const [searchParams] = useSearchParams()
   // ?k= 가 있을 때만 폼을 렌더한다. 이것은 경험 분기일 뿐 방어가 아니다(방어는 서버).
   const writeKey = searchParams.get('k')
+  const navigate = useNavigate()
 
   const [entries, setEntries] = useState<PublicEntry[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -39,15 +40,15 @@ function GuestbookPage() {
       // 새 시도가 시작되면 이전 실패의 잔상을 바로 지운다.
       setSubmitError(null)
       try {
-        await postEntry({ ...input, key: writeKey ?? '' })
-        await load()
+        const result = await postEntry({ ...input, key: writeKey ?? '' })
+        navigate('/guestbook/keycap', { state: { status: result.status } })
       } catch (error) {
         setSubmitError(errorMessage(error))
         // 폼이 입력값을 유지할 수 있도록 다시 던진다
         throw error
       }
     },
-    [writeKey, load],
+    [writeKey, navigate],
   )
 
   return (
