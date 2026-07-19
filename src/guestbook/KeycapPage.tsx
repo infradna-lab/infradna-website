@@ -9,7 +9,7 @@ function KeycapImage() {
   const [ok, setOk] = useState(true)
   if (!ok) {
     return (
-      <div className="mx-auto mb-6 flex aspect-square w-48 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 text-sm text-slate-400">
+      <div className="mx-auto mb-6 flex aspect-[752/420] w-full max-w-xs items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 text-sm text-slate-400">
         키캡 이미지
       </div>
     )
@@ -17,9 +17,9 @@ function KeycapImage() {
   return (
     <img
       src="/keycap.png"
-      alt="키캡"
+      alt="인프라재난관리진흥원 키캡 키링"
       onError={() => setOk(false)}
-      className="mx-auto mb-6 w-48 max-w-full rounded-2xl"
+      className="mx-auto mb-6 w-full max-w-xs rounded-2xl"
     />
   )
 }
